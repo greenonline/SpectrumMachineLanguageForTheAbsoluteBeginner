@@ -30,7 +30,7 @@ Editing that line will show that within the quotes are the characters " ", "T", 
 
 #### Actual BASIC line 
 
-An actual real-world example from [Frogger](https://archive.org/details/sinclair-programs-05/page/n19/mode/1up?view=theater
+An actual real-world example from [Frogger](https://archive.org/details/sinclair-programs-05/page/n19/mode/1up?view=theater)
 
 ```none
 1140 LET Q$=Q$+"CHR$ 22+CHR$ "+STR$ Y(I)+"+CHR$ 0+P$("+STR$ I+",X("+STR$ I+") TO )+P$("+STR$ I+", TO X("+STR$ I+")-1)"
