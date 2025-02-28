@@ -432,7 +432,7 @@
 6EBD DF4B     02620         defw    $48df              
 6EBF C76A     02630         defw    lcar               
 6EC1 276B     02640         defw    lcatt               
-64C3 02       02650         db      2,6
+6EC3 02       02650         db      2,6
               02660 ;    
               02670 ;    
 6EC5 06       02680 rtdb    db      6,1,0,0   
@@ -440,153 +440,142 @@
 6EC5 1848     02690         defw    $4818              
 6ECB 926C     02700         defw    rtruck               
 6ECD 6A6D     02710         defw    rtatt               
-64CF 03       02720         db      3,9
+6ECF 03       02720         db      3,9
      09
               02730 ;    
               02740 ;    
-ltdb:
-    db      6,1,1,1             
-    defw    $48df            
-    defw    ltruck               
-    defw    ltatt               
-    db      3,9
-;
-;    
-lpcdb:
-    db      1,1,1,1
-    defw    $48df
-    defw    lcar
-    defw    lpcatt
-    db      2,6
-;
-;
-lpcatt:
-    db      0,5,5,5,5,0
-    db      0,0,0,5,5,0
-;
-;    
-rpcdb:
-    db      1,1,0,0
-    defw    $481b
-    defw    rcar
-    defw    rpcatt
-    db      2,6
-;
-;    
-rpcatt:
-    db      0,5,5,5,5,0
-    db      0,5,5,0,0,0
-;
-;
-pcton1:
-    db      41,0,$0f0,1         ; first police car tone
-pcton2:
-    db      23,0,$8c,3          ; second police car tone     
-;
-;
-homton:
-    db      $46,0,$0c7,4        ; frog rech home tone
-    db      $5d,0,$8c,3
-    db      $7c,0,$0a1,2
-    db      $0aa,0,$0f1,1
-    db      $0de,0,$6d,1
-    db      $28,1,9,1
-    db      $8b,1,$0bf,0
-    db      $0f,2,$88,0
-    db      $0c0,2,$5e,0
-dieton:
-    db      $84,3,$43,0         ; frog dying tone, reverse
-;
-;        
-scrms1:
-    defm    "Score "
-score:
-    db      $30,$30,$30,$30,$30,$30
-scrms2:
-    defm    "HIGH SCORES"
-hiscr:
-    db      $30,$30,$30,$30,$30    
-;
-;
-image:
-    ds      5                   ; printing image of score
-updwn:
-    defb    0                   ; set when frog moves up or down
-;
-;
-column:
-    db      0                   ; variable storing shape column
-row:
-    db      0                   ; variable storing shape row
-skip:
-    defb    0                   ; char skipping during draw
-fill:
-    defb    0                   ; char drawn
-attpos:
-    defw    0                   ; holding the atrribute file ptr
-attr:
-    db      0                   ; attr of character block drawn
-drwpos:
-    defw    0                   ; draw position
-strpos:
-    defw    0                   ; store position
-;
-;
-attptr:
-    defw    0                   
-newpos:
-    defw    0                   ; new traffic object position
-posptr:
-    defw    0                   ; traffic position database ptr
-genflg:
-    defb    0                   ; traffic regneration flag
-;
-;    
-jamflg:
-    defb    0                   ; set to 1 as traffic move jam
-;
-;
-chase:
-    defb    0                   ; set when police car appears
-soundf:
-    defb    0                   ; set when user want siren sound
-tonflg:
-    defb    0                   ; determine which siren tone
-rnd:
-    defw    0                   ; pointer to rom for random no.    
-;
-;    
-gamflg:
-    defb    1                   ; end if zero
-oldfrg:
-    defw    0                   ; old frog pos
-newfrg:
-    defw    0                   ; old frog pos
-crhflg:
-    defb    0                   ; set to 1 when from was crash
-temdir:
-    defb    0                   ; frog temporary new direction
-tempos:
-    defw    0                   ; frog temporary new position
-temshp:
-    defw    0                   ; frog temporary new shape
-;
-;
-bothy1      equ $5020           ; 0,38.  0,39
-bothy2      equ $5120           
-tophy1      equ $46a0           ; 0,128. 0,129
-tophy2      equ $47a0
-midhy1      equ $4b60           ; x,83.  x,84
-midhy2      equ $4c60
-;
-;
-chrset      equ $3c00
-;
-;
-numfrg:
-    defb    5                   ; number of frog
-;
-;
+6ED1 06       02750 ltdb    db      6,1,1,1 
+     01 01 01    
+6ED5 DF48     02760         defw    $48df            
+6ED7 9F6B     02770         defw    ltruck               
+6ED9 776C     02780         defw    ltatt               
+6EDB 03       02790         db      3,9
+     09
+              02800 ;    
+              02810 ;    
+6EDD 01       02820 lpcdb   db      1,1,1,1
+     01 01 01
+6EE1 DF48     02830         defw    $48df
+6EE3 C76A     02840         defw    lcar
+6EE5 E96E     02850         defw    lpcatt
+6EE7 02       02860         db      2,6
+     06
+              02870 ;    
+              02880 ;    
+6EE9 00       02890 lpcatt  db      0,5,5,5,5,0
+     05 05 05 05 00
+6EEF 00       02900         db      0,0,0,5,5,0
+     00 00 00 05 05 00
+              02910 ;
+              02920 ;    
+6EF5 01       02930 rpcdb   db      1,1,0,0
+     01 00 00
+6EF9 1B4B     02940         defw    $481b
+6EFB 336B     02950         defw    rcar
+6EFD 016F     02960         defw    rpcatt
+6EFF 02       02970         db      2,6
+     06
+              02980 ;
+              02990 ;
+6F01 00       03000 rpcatt  db      0,5,5,5,5,0
+     05 05 05 05 00
+6F07 00       03010         db      0,5,5,0,0,0
+     05 05 00 00 00
+              03020 ;
+              03030 ;
+              00480 ;
+              00490 ;
+6F0D 29       00500 pcton1  db      41,0,$0f0,1         ; first police car tone
+     00 F0 01
+6F11 17       00510 pcton2  db      23,0,$8c,3          ; second police car tone     
+     00 8C 03
+              00520 ;
+              00530 ;
+6F15 46       00540 homton  db      $46,0,$0c7,4        ; frog rech home tone
+     00 C7 04
+6F19 5D       00550         db      $5d,0,$8c,3
+     00 C7 04
+6F1D 7C       00560         db      $7c,0,$0a1,2
+     00 A1 02
+6F21 AA       00570         db      $0aa,0,$0f1,1
+     00 F1 01
+6F25 DE       00580         db      $0de,0,$6d,1
+     00 6D 01
+6F29 28       00590         db      $28,1,9,1
+     01 09 01
+6F2D 8B       00600         db      $8b,1,$0bf,0
+     01 BF 00
+6F31 0F       00610         db      $0f,2,$88,0
+     02 88 00
+6F35 C0       00620         db      $0c0,2,$5e,0
+     02 5E 00
+6F39 84       00630 dieton  db      $84,3,$43,0         ; frog dying tone, reverse
+     03 43 00
+              00640 ;
+              00650 ;
+6F3D 53       00660 scrms1  defm    "Score "
+     63 6F 72 65 20
+6F43 30       00670 score   db      $30,$30,$30,$30,$30,$30
+     30 30 30 30 30
+6F49 48       00680 scrms2  defm    "HIGH SCORES"
+     49 47 48 20 53 4F 52
+     45 20
+6F54 30       00690 hiscr   db      $30,$30,$30,$30,$30 
+     30 30 30 30   
+              00700 ;
+              00710 ;
+0005          00720 image   ds      5                   ; printing image of score
+6F5E 00       00730 updwn   defb    0                   ; set when frog moves up or down
+              00740 ;
+              00750 ;
+6F5F 00       00760 column  db      0                   ; variable storing shape column
+6F60 00       00770 row     db      0                   ; variable storing shape row
+6F61 00       00780 skip    defb    0                   ; char skipping during draw
+6F62 00       00790 fill    defb    0                   ; char drawn
+6F63 0000     00800 attpos  defw    0                   ; holding the atrribute file ptr
+6F65 00       00810 attr    db      0                   ; attr of character block drawn
+6F66 0000     00820 drwpos  defw    0                   ; draw position
+6F68 0000     00830 strpos  defw    0                   ; store position
+              00840 ;
+              00850 ;
+6F6A 0000     00860 attptr  defw    0                   
+6F6A 0000     00870 newpos  defw    0                   ; new traffic object position
+6F6A 0000     00880 posptr  defw    0                   ; traffic position database ptr
+6F6A 00       00890 genflg  defb    0                   ; traffic regneration flag
+              00900 ;
+              00910 ;
+6F71 00       00920 jamflg  defb    0                   ; set to 1 as traffic move jam
+              00930 ;
+              00940 ;
+6F72 00       00950 chase   defb    0                   ; set when police car appears
+6F73 00       00960 soundf  defb    0                   ; set when user want siren sound
+6F74 00       00970 tonflg  defb    0                   ; determine which siren tone
+6F75 0000     00980 rnd     defw    0                   ; pointer to rom for random no.    
+              00990 ;
+              01000 ;
+6F77 01       01010 gamflg  defb    1                   ; end if zero
+6F78 0000     01020 oldfrg  defw    0                   ; old frog pos
+6F7A 0000     01030 newfrg  defw    0                   ; old frog pos
+6F7C 00       01040 crhflg  defb    0                   ; set to 1 when from was crash
+6F7D 00       01050 temdir  defb    0                   ; frog temporary new direction
+6F7E 0000     01060 tempos  defw    0                   ; frog temporary new position
+6F80 0000     01070 temshp  defw    0                   ; frog temporary new shape
+              01080 ;
+              01090 ;
+5020          01100 bothy1  equ $5020                   ; 0,38.  0,39
+5120          01110 bothy2  equ $5120           
+46A0          01120 tophy1  equ $46a0                   ; 0,128. 0,129
+47A0          01130 tophy2  equ $47a0
+4860          01140 midhy1  equ $4b60                   ; x,83.  x,84
+4C60          01150 midhy2  equ $4c60
+              01160 ;
+              01170 ;
+3C00          01180 chrset  equ $3c00
+              01190 ;
+              01200 ;
+6F82          01210 numfrg  defb    5                   ; number of frog
+              01220 ;
+              01230 ;
 init:
     xor     a                   ; 000 for d2 d2 d0
     out     ($0fe),a            ; set border colour
