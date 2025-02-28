@@ -393,53 +393,57 @@
               02300 ;
               02310 ;    
 6E89 956E     02320 dbindex defw    rbdb                ; right bike db
-    defw    lbdb                ; left bike db
-    defw    rcdb                ; right car db
-    defw    lcdb                ; left car db
-    defw    rtdb                ; right truck db
-    defw    ltdb                ; left truck db
-;
-;    
-rbdb:
-    db      2,1,0,0             ; ext cnt dir raf
-    defw    $481d               ; pos
-    defw    rbike               ; right bike
-    defw    rbatt               ; attribute
-    db      2,4                 ; row col
-;
-;    
-lbdb:
-    db      2,1,1,1             
-    defw    $48df               
-    defw    lbike               
-    defw    lbatt               
-    db      2,4
-;
-;    
-rcdb:
-    db      3,1,0,0             
-    defw    $481b               
-    defw    rcar               
-    defw    rcatt               
-    db      2,6
-;
-;    
-lcdb:
-    db      3,1,1,1             
-    defw    $48df              
-    defw    lcar               
-    defw    lcatt               
-    db      2,6
-;
-;    
-rtdb:
-    db      6,1,0,0             
-    defw    $4818              
-    defw    rtruck               
-    defw    rtatt               
-    db      3,9
-;
-;    
+6E8B A16E     02330         defw    lbdb                ; left bike db
+6E8D AD6E     02340         defw    rcdb                ; right car db
+6E8F B96E     02350         defw    lcdb                ; left car db
+6E91 C56E     02360         defw    rtdb                ; right truck db
+6E93 D16E     02370         defw    ltdb                ; left truck db
+              02380 ;
+              02390 ;    
+6E95 02       02400 rbdb    db      2,1,0,0             ; ext cnt dir raf
+     01 00 00
+6E99 1D48     02410         defw    $481d               ; pos
+6E9B 7F6A     02420         defw    rbike               ; right bike
+6E9D BF6A     02430         defw    rbatt               ; attribute
+6E9F 02       02440         db      2,4                 ; row col
+     04
+              02450 ;
+              02460 ;    
+6EA1 02       02470 lbdb    db      2,1,1,1    
+     01 01 01
+6EA5 DF48     02480         defw    $48df               
+6EA7 376A     02490         defw    lbike               
+6EA9 776A     02500         defw    lbatt               
+6EAB 02       02510         db      2,4
+     04
+              02520 ;    
+              02530 ;    
+6EAD 03       02540 rcdb    db      3,1,0,0  
+     01 00 00
+6EB1 1B4B     02550         defw    $481b               
+6EB3 336B     02560         defw    rcar               
+6EB5 936B     02570         defw    rcatt               
+6EB7 02       02580         db      2,6
+     06
+              02590 ;    
+              02600 ;    
+6EB9 03       02610 lcdb    db      3,1,1,1  
+     01 01 01           
+6EBD DF4B     02620         defw    $48df              
+6EBF C76A     02630         defw    lcar               
+6EC1 276B     02640         defw    lcatt               
+64C3 02       02650         db      2,6
+              02660 ;    
+              02670 ;    
+6EC5 06       02680 rtdb    db      6,1,0,0   
+     01 00 00          
+6EC5 1848     02690         defw    $4818              
+6ECB 926C     02700         defw    rtruck               
+6ECD 6A6D     02710         defw    rtatt               
+64CF 03       02720         db      3,9
+     09
+              02730 ;    
+              02740 ;    
 ltdb:
     db      6,1,1,1             
     defw    $48df            
