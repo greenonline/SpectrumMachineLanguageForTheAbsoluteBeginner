@@ -1,6 +1,6 @@
 # SpectrumMachineLanguageForTheAbsoluteBeginner
 
-Code from **Spectrum Machine Language For The Absolute Beginner** (1982) by *William Tang*. ISBN 086161 1101
+Code from [**Spectrum Machine Language For The Absolute Beginner**](http://www.retro8bitcomputers.co.uk/Content/downloads/books/SpectrumMachineLanguageForTheAbsoluteBeginner.pdf) (1982) by *William Tang*. ISBN 086161 1101
 
  - EZCODE (BASIC)
  - HEXLOADER (BASIC)
