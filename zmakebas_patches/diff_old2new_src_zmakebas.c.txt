@@ -1,0 +1,15 @@
+165a166
+> int gValString=0;
+407a409
+> printf("        -t      set quotes mode, convert tokens within quotes (for VAL$).\n");
+422c424
+<   switch(getopt(argc,argv,"a:hi:ln:o:prs:"))
+---
+>   switch(getopt(argc,argv,"a:hi:ln:o:prs:t"))
+464a467,468
+>     case 't':	/* all tokens (even in quotes) */
+>       gValString=1; break;
+738c742
+<       if(in_quotes && *ptr!='"')
+---
+>       if(in_quotes && *ptr!='"' && !gValString)
