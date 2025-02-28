@@ -1,4 +1,4 @@
-# Fixing an issue with `zmake.bas`
+# Fixing an issue with `zmakebas`
 
 See also [zmakebas - tokens-in-quotes fix](zmakebas - tokens-in-quotes fix.md).
 
