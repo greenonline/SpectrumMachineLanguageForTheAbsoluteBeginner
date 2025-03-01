@@ -1,6 +1,6 @@
 # Fixing an issue with `zmakebas`
 
-See also [zmakebas - tokens-in-quotes fix](zmakebas - tokens-in-quotes fix.md).
+See also [zmakebas - tokens-in-quotes fix.md](https://github.com/z00m128/zmakebas/issues/3).
 
 # Tokens within quotes are not tokenised
 
