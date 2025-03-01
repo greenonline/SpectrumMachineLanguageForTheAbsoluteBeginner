@@ -18,7 +18,7 @@ From [Frogger](https://archive.org/details/sinclair-programs-05/page/n19/mode/1u
 
 ### Issues/Patches for `zmakebas`
 
-See [zmakebas - tokens-in-quotes fix](zmakebas - tokens-in-quotes fix.md)
+See [zmakebas - tokens-in-quotes fix.md](https://github.com/greenonline/SpectrumMachineLanguageForTheAbsoluteBeginner/tree/main/zmakebas_patches#readme)
 
 ## See also 
 
