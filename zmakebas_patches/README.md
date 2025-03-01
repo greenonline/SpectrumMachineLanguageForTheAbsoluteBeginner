@@ -243,6 +243,10 @@ Only a few lines need to be changed, and added:
 ```none
 165a166
 > int gValString=0;
+395c396
+< printf("                [-o output_file] [-s line] [input_file]\n\n");
+---
+> printf("                [-o output_file] [-s line] [-t] [input_file]\n\n");
 407a409
 > printf("        -t      set quotes mode, convert tokens within quotes (for VAL$).\n");
 422c424
