@@ -576,235 +576,218 @@
 6F82          01210 numfrg  defb    5                   ; number of frog
               01220 ;
               01230 ;
-init:
-    xor     a                   ; 000 for d2 d2 d0
-    out     ($0fe),a            ; set border colour
-    ld      (23624),a           ; to black
-    ld      (crhflg),a
-    ld      (frgext),a          ; set frog non exist
-    inc     a
-    ld      (gamflg),a         ; set game flag
-    ld      a,5                 ; initialise frog no.
-    ld      (numfrg),a
-    ld      a,r                 ; generate random ptr
-    and     $3f                 ; for this cycle
-    ld      h,a                 ; ptr points to rom
-    ld      a,r
-    ld      l,a
-    ld      (rnd),hl
-    ld      hl,$50ac            ; init frog station
-    ld      (frgstn),hl
-    call    clrscr              ; clear screen routine
-    call    drwhwy              ; draw highway
-    call    lineup              ; line up all exist frogs
-    ld      hl,$4000            ; message location
-    ld      de,scrms1           ; load score message
-    ld      b,6
-    call    disasc              ; display ascii character
-    ld      hl,score+1          ; print score
-    call    scrimg              ; convert to printable image
-    ld      hl,$4006
-    ld      de,image
-    ld      b,5
-    call    disasc
-    ld      hl,$400e            ; high score message
-    ld      de,scrms2
-    ld      b,11
-    call    disasc
-    ld      hl,hiscr
-    call    scrimg
-    ld      hl,$4019
-    ld      de,image
-    ld      b,5
-    call    disasc
-    ld      hl,ob1ext           ; set all obj nonexist
-    ld      de,12
-    ld      b,7
-    xor     a
-intlp1:
-    ld      (hl),a
-    add     hl,de
-    djnz    intlp1
-    ld      (chase),a           ; set no police car chase
-    inc     a
-    ld      (soundf),a          ; set siren on
-    ld      hl,score            ; initialise score to
-    ld      de,score+1          ; ascii zero ie $30
-    ld      c,5
-    ld      (hl),$30
-    ldir                        ; init score to $30
-    ret
-;
-;
-drwhwy:
-    ld      hl,$40a0            ; fill top hwy
-    call    filhwy
-    ld      hl,$4860            ; fill middle hwy
-    call    filhwy
-    ld      hl,$5020            ; fill bottom hwy
-    call    filhwy
-    ld      hl,tophy1           ; reverse build highway
-    ld      de,tophy2
-    xor     a
-    call    highwy
-    ld      hl,bothy1
-    ld      de,bothy2
-    call    highwy
-    ld      hl,midhy1
-    ld      de,midhy2
-    ld      a,195               ; bin 11000011
-highwy:
-    ld      b,32                ; 32*8 bits
-hwylop:
-    ld      (hl),a
-    ld      (de),a
-    inc     hl
-    inc     de
-    djnz    hwylop
-    ret
-;
-;
-filhwy:
-    ld      a,$0ff
-    exx
-    ld      b,32
-filhyl:
-    exx
-    push    hl
-    ld      b,8
-filchr:
-    ld      (hl),a
-    inc     h
-    djnz    filchr
-    pop     hl
-    inc     hl
-    exx
-    djnz    filhyl
-    exx
-    ret
-;
-;
-; *********************** LINEUP ***********************
-;
-; draw all frogs left of screen
-;
-lineup:
-    ld      a,1                 ; right frog
-    ld      (frgdir),a
-    ld      de,frog2            ; right frog shape
-    ld      hl,(frgstn)         ; frog station
-    ld      a,4                 ; (paper 0) * 8 + (ink 4)
-    ld      (attr),a
-    ld      a,(numfrg)          ; number of frog
-    and     a                   ; test for number of frog left
-    ret     z
-    ld      b,a                 ; number of frog times
-drawln:
-    push    bc
-    push    de
-    push    hl
-    call    drwfrg             ; draw frog routine
-    pop     hl
-    pop     de
-    dec     hl
-    dec     hl
-    dec     hl
-    pop     bc
-    djnz    drawln
-    ret
-;
-;    
-; *********************** DRWFRG ***********************
-; similar to draw routine
-;
-drwfrg:
-    ld      a,2                 ; two row frog shape
-    ex      af,af'
-    push    hl                  ; store pos ptr
-frglp0:
-    push    hl
-    ld      c,2                 ; column count
-frglp1:
-    push    hl
-    ld      b,8                 ; draw character
-frglp2:
-    ld      a,(de)
-    ld      (hl),a
-    inc     de
-    inc     h                   ; next byte of the char
-    djnz    frglp2
-    pop     hl                  ; current pointer
-    inc     hl                  ; moce to next char pos
-    dec     c                   ; decr  column count
-    jr      nz,frglp1           
-    pop     hl                  ; row ptr
-    ex      af,af'              
-    dec     a                   ; dec lines of char
-    ld      c,32
-    jr      z,frgatt            ; load frog attribute
-    ex      af,af'
-    and     a
-    sbc     hl,bc               ; move 32 char/1 line up
-    bit     0,h                 ; test cross scr section
-    jr      z,frglp0
-    ld      a,h
-    sub     7                   ; up one screen section
-    ld      h,a
-    jr      frglp0
-frgatt:
-    pop     hl                  ; pos ptr
-    ld      a,h                 ; convert to attribute ptr
-    and     $18
-    sra     a
-    sra     a
-    sra     a
-    add     a,$58
-    ld      h,a
-    ld      a,(attr)            ; fill frog shape attr
-    ld      (hl),a
-    inc     hl                  ; next character
-    ld      (hl),a
-    sbc     hl,bc               ; one line up
-    ld      (hl),a
-    dec     hl                  ; next char left
-    ld      (hl),a
-    ret
-;
-;
-; *********************** TFCTRL ***********************
-; traffic control routine
-;
-tfctrl:
-    ld      hl,genflg           ; check regneration flag
-    xor     a                   
-    cp      (hl)
-    jr      z,gener             ; if zero test generate
-    dec     (hl)                ; decr generation flag
-    ret
-gener:
-    ld      hl,ob1ext           ; start of traffic db
-    ld      de,12               ; 12 byte database
-    ld      b,6                 ; 6 db pairs
-tctrlp:
-    cp      (hl)                ; test existence
-    jr      nz,nspace
-    call    regen               ; regeneration routine
-    ret
-nspace:
-    add     hl,de
-    djnz    tctrlp
-    ret
-;
-;
-; *********************** REGEN ***********************
-; regneration of traffic
-; INPUT:    HL=>DB PAIRS
-;
-regen:
-    push    hl
-rand1:
-    call    randno              ; random number routine
-    and     7                   ; generate random number
+6F83 AF       01240 init    xor     a                   ; 000 for d2 d2 d0
+6F84 D3FE     01250         out     ($0fe),a            ; set border colour
+6F86 32485C   01260         ld      (23624),a           ; to black
+6F89 32796E   01270         ld      (crhflg),a
+6F8C 32796E   01280         ld      (frgext),a          ; set frog non exist
+6F8F 3C       01290         inc     a
+6F90 32776F   01300         ld      (gamflg),a         ; set game flag
+6F93 3E05     01310         ld      a,5                 ; initialise frog no.
+6F95 32826F   01320         ld      (numfrg),a
+6F98 ED5F     01330         ld      a,r                 ; generate random ptr
+6F9A E63F     01340         and     $3f                 ; for this cycle
+6F9C 67       01350         ld      h,a                 ; ptr points to rom
+6F9D ED5F     01360         ld      a,r
+6F9F 6F       01370         ld      l,a
+6FA0 22756F   01380         ld      (rnd),hl
+6FA3 21AC50   01390         ld      hl,$50ac            ; init frog station
+6FA6 22846E   01400         ld      (frgstn),hl
+6FA9 CDD772   01410         call    clrscr              ; clear screen routine
+6FAC CD0B70   01420         call    drwhwy              ; draw highway
+6FAF CD5570   01430         call    lineup              ; line up all exist frogs
+6FB2 210040   01440         ld      hl,$4000            ; message location
+6FB5 113D6F   01450         ld      de,scrms1           ; load score message
+6FB8 0606     01460         ld      b,6
+6FBA CD2873   01470         call    disasc              ; display ascii character
+6FBD 21446F   01480         ld      hl,score+1          ; print score
+6FC0 CD6F77   01490         call    scrimg              ; convert to printable image
+;ME <- TYPO???
+6FC3 210640   01500         ld      hl,$4006
+6FC6 11596F   01510         ld      de,image
+6FC9 0605     01520         ld      b,5
+6FCB CD2873   01530         call    disasc
+6FCE 210E40   01540         ld      hl,$400e            ; high score message
+6FD1 11496F   01550         ld      de,scrms2
+6FD4 060B     01560         ld      b,11
+6FD6 CD2873   01570         call    disasc
+6FD9 21546F   01580         ld      hl,hiscr
+6FDC CD6F77   01590         call    scrimg
+6FDF 211940   01600         ld      hl,$4019
+6FE2 11596F   01610         ld      de,image
+6FE5 0605     01620         ld      b,5
+6FE7 CD2873   01630         call    disasc
+6FEA 21256E   01640         ld      hl,ob1ext           ; set all obj nonexist
+6FED 110C00   01650         ld      de,12
+6FF0 0607     01660         ld      b,7
+6FF2 AF       01670         xor     a
+6FF3 77       01680 intlp1  ld      (hl),a
+6FF4 19       01690         add     hl,de
+6FF5 10FC     01700         djnz    intlp1
+6FF7 32726F   01710         ld      (chase),a           ; set no police car chase
+6FFA 3C       01720         inc     a
+6FFB 32736F   01730         ld      (soundf),a          ; set siren on
+6FFE 21436F   01740         ld      hl,score            ; initialise score to
+7001 11446F   01750         ld      de,score+1          ; ascii zero ie $30
+7004 0E05     01760         ld      c,5
+7006 3630     01770         ld      (hl),$30
+7008 EDB0     01780         ldir                        ; init score to $30
+700A C9       01790         ret
+              01800 ;
+              01810 ;
+700B 21A040   01820 drwhwy  ld      hl,$40a0            ; fill top hwy
+700E CD4170   01830         call    filhwy
+7011 216048   01840         ld      hl,$4860            ; fill middle hwy
+7014 CD4170   01850         call    filhwy
+7017 212050   01860         ld      hl,$5020            ; fill bottom hwy
+701A CD4170   01870         call    filhwy
+701D 21A046   01880         ld      hl,tophy1           ; reverse build highway
+7020 11A047   01890         ld      de,tophy2
+7023 AF       01900         xor     a
+7024 CD3870   01910         call    highwy
+7027 212050   01920         ld      hl,bothy1
+702A 112051   01930         ld      de,bothy2
+702D CD3870   01940         call    highwy
+7030 21604B   01950         ld      hl,midhy1
+7033 11604C   01960         ld      de,midhy2
+7036 3EC3     01970         ld      a,195               ; bin 11000011
+7038 0620     01980 highwy  ld      b,32                ; 32*8 bits
+703A 77       01990 hwylop  ld      (hl),a
+703B 12       02000         ld      (de),a
+703C 23       02010         inc     hl
+703D 13       02020         inc     de
+703E 10FA     02030         djnz    hwylop
+7040 C9       02040         ret
+              02050 ;
+              02060 ;
+7041 3EFF     02070 filhwy  ld      a,$0ff
+7043 D9       02080         exx
+7044 0620     02090         ld      b,32
+7046 D9       02100 filhyl  exx
+7047 E5       02110         push    hl
+7048 0608     02120         ld      b,8
+704A 77       02130 filchr  ld      (hl),a
+704B 24       02140         inc     h
+704C 10FC     02150         djnz    filchr
+704E E1       02160         pop     hl
+704F 23       02170         inc     hl
+7050 D9       02180         exx
+7051 10F3     02190         djnz    filhyl
+7053 D9       02200         exx
+7054 C9       02210         ret
+              02220 ;
+              02230 ;
+              02240 ; *********************** LINEUP ***********************
+              02250 ;
+              02260 ; draw all frogs left of screen
+              02270 ;
+              02280 ;
+7055 3E01     02290 lineup  ld      a,1                 ; right frog
+7057 327B6E   02300         ld      (frgdir),a
+705A 11D769   02310         ld      de,frog2            ; right frog shape
+705D 2A846E   02320         ld      hl,(frgstn)         ; frog station
+7060 3E04     02320         ld      a,4                 ; (paper 0) * 8 + (ink 4)
+7062 32656F   02340         ld      (attr),a
+7065 3A826F   02350         ld      a,(numfrg)          ; number of frog
+7068 A7       02360         and     a                   ; test for number of frog left
+7069 C8       02370         ret     z
+706A 47       02380         ld      b,a                 ; number of frog times
+706B C5       02390 drawln  push    bc
+706C D5       02400         push    de
+706D E5       02410         push    hl
+706E CD7A70   02420         call    drwfrg             ; draw frog routine
+7071 E1       02430         pop     hl
+7072 D1       02440         pop     de
+7073 2B       02450         dec     hl
+7074 2B       02460         dec     hl
+7075 2B       02470         dec     hl
+7076 C1       02480         pop     bc
+7077 10F2     02490         djnz    drawln
+7079 C9       02500         ret
+              02510 ;
+              02520 ;    
+              02530 ; *********************** DRWFRG ***********************
+              02540 ;
+              02550 ; similar to draw routine
+              02560 ;
+707A 3E02     02570 drwfrg  ld      a,2                 ; two row frog shape
+707C 08       02580         ex      af,af'
+707D E5       02590         push    hl                  ; store pos ptr
+707E E5       02600 frglp0  push    hl
+707F 0E02     02610         ld      c,2                 ; column count
+7081 E5       02620 frglp1  push    hl
+7082 0608     02630         ld      b,8                 ; draw character
+7084 1A       02640 frglp2  ld      a,(de)
+7085 77       02650         ld      (hl),a
+7086 13       02660         inc     de
+7087 24       02670         inc     h                   ; next byte of the char
+7088 10FA     02680         djnz    frglp2
+708A E1       02690         pop     hl                  ; current pointer
+708B 23       02700         inc     hl                  ; moce to next char pos
+708C 0D       02710         dec     c                   ; decr  column count
+708D 20F2     02720         jr      nz,frglp1           
+708F E1       02730         pop     hl                  ; row ptr
+7090 08       02740         ex      af,af'              
+7091 3D       02750         dec     a                   ; dec lines of char
+7092 0E20     02760         ld      c,32
+7094 280E     02770         jr      z,frgatt            ; load frog attribute
+7096 08       02780         ex      af,af'
+7097 A7       02790         and     a
+7098 ED42     02800         sbc     hl,bc               ; move 32 char/1 line up
+709A CB44     02810         bit     0,h                 ; test cross scr section
+709C 28E0     02820         jr      z,frglp0
+709E 7C       02830         ld      a,h
+709F D607     02840         sub     7                   ; up one screen section
+70A1 67       02850         ld      h,a
+70A2 18DA     02860         jr      frglp0
+70A4 E1       02870 frgatt  pop     hl                  ; pos ptr
+70A5 7C       02880         ld      a,h                 ; convert to attribute ptr
+70A6 E618     02890         and     $18
+70A8 CD2F     02900         sra     a
+70AA CD2F     02910         sra     a
+70AC CD2F     02920         sra     a
+70AE C658     02930         add     a,$58
+70B0 67       02940         ld      h,a
+70B1 3A656F   02950         ld      a,(attr)            ; fill frog shape attr
+70B4 77       02960         ld      (hl),a
+70B5 23       02970         inc     hl                  ; next character
+70B6 77       02980         ld      (hl),a
+70B7 ED42     02990         sbc     hl,bc               ; one line up
+70B9 77       03000         ld      (hl),a
+70BA 2B       03010         dec     hl                  ; next char left
+70BB 77       03020         ld      (hl),a
+70BC C9       03030         ret
+              03040 ;
+              03050 ; *********************** TFCTRL ***********************
+              03060 ;
+              03070 ; traffic control routine
+              03080 ;
+70BD 21706F   03090 tfctrl  ld      hl,genflg           ; check regneration flag
+70C0 AF       03100         xor     a                   
+70C1 BE       03110         cp      (hl)
+70C2 2802     03120         jr      z,gener             ; if zero test generate
+70C4 35       03130         dec     (hl)                ; decr generation flag
+70C5 C9       03140         ret
+70C6 21256E   03150 gener   ld      hl,ob1ext           ; start of traffic db
+70C9 110C00   03160         ld      de,12               ; 12 byte database
+70CC 0606     03170         ld      b,6                 ; 6 db pairs
+70CE BE       03180 tctrlp  cp      (hl)                ; test existence
+70CF 2004     03190         jr      nz,nspace
+70D1 CDD970   03200         call    regen               ; regeneration routine
+70D4 C9       03210         ret
+70D5 19       03220 nspace  add     hl,de
+70D6 10F6     03230         djnz    tctrlp
+70D8 C9       03240         ret
+              03250 ;
+              03260 ;
+              03270 ; *********************** REGEN ***********************
+              03280 ;
+              03290 ; regneration of traffic
+              03300 ; INPUT:    HL=>DB PAIRS
+              03310 ;
+70D9 E5       03320 regen   push    hl
+70DA CDCC77   03330 rand1   call    randno              ; random number routine
+70DD E607     03340         and     7                   ; generate random number
     cp      6                   ; from 0 to 5
     jr      nc,rand1
     ld      bc,$5921            ; two char test
