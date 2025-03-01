@@ -1,5 +1,23 @@
 ## TAP files
 
+### BASIC
+
+#### BASIC files from the book
+
+The files for:
+
+ - HEXLOAD
+ - EZCODE
+ - CHECKSUM
+
+are loaded using `LOAD ""`.
+
+#### Frogger
+
+Likewise for the bonus `frogger.tap`, load with `LOAD ""`. Run with `RUN 2000`.
+
+### ASM
+
 Note that the assembler version of Frogger - *Freeway Frog* - from the book, needs to be loaded with `LOAD "" CODE`. To run:
 
 ```none
