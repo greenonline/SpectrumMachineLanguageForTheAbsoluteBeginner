@@ -1014,256 +1014,239 @@
 720F 08       05580         ex      af,af'
 7210 D5       05590 lp0     push    de
 7211 E5       05600         push    hl                  ; store line ptr
-    ld      a,(skip)
-    ld      c,a
-    ld      b,0
-    add     hl,bc               ; skip pos ptr
-    add     a,a                 ; multiple of 8 bytes
-    add     a,a
-    add     a,a
-    ld      c,a                 ; skip shape ptr
-    ex      de,hl
-    add     hl,bc
-    ex      de,hl
-    bit     0,h                 ; cross screen section
-    jr      z,noskip
-    ld      a,7                 ; if yes, move up
-    add     a,h
-    ld      h,a
-noskip:
-    ld      a,(fill)
-    and     a
-    jr      z,nxt
-    ld      c,a                 ; column to be filled
-lp1:
-    push    hl                  ; fill character
-    ld      b,8
-lp2:
-    ld      a,(de)              ; fill character bytes
-    ld      (hl),a
-    inc     de
-    inc     h
-    djnz    lp2
-    pop     hl
-    dec     c
-    jr      z,nxt
-    inc     hl                  ; next character
-    jr      lp1
-nxt:
-    ex      af,af'
-    pop     hl                  ; restore line ptr
-    pop     de                  ; shape db ptr
-    dec     a                   ; update row count
-    jr      z,ldattr
-    ex      af,af'
-    and     a                   ; clear carry
-    ld      c,$20
-    sbc     hl,bc               ; one line up
-    bit     0,h                 ; cross screen section
-    jr      z,moddb
-    ld      a,h
-    sub     7
-    ld      h,a
-moddb:
-    ld      a,(column)
-    add     a,a
-    add     a,a
-    add     a,a                 ; update shape db
-    ld      c,a
-    ex      de,hl
-    add     hl,bc
-    ex      de,hl
-    jr      lp0
-ldattr:
-    ld      hl,(attpos)
-    ld      de,(attptr)
-    ld      a,(row)
-atrow:
-    ex      af,af'
-    push    de
-    push    hl
-    ld      a,(skip)
-    ld      c,a
-    ld      b,0
-    add     hl,bc               ; skip attribute file
-    ex      de,hl
-    add     hl,bc               ; skip attribute database
-    ex      de,hl
-    ld      a,(fill)
-    and     a
-    jr      z,skipat            ; skip attribute
-    ld      b,a                 ; fill attribute
-attr2:
-    ld      a,(de)
-    ld      (hl),a
-    inc     hl
-    inc     de
-    djnz    attr2
-skipat:
-    pop     hl
-    pop     de
-    ld      a,(column)
-    and     a                   ; clear carry
-    ld      c,$20
-    sbc     hl,bc               ; next attribute line up
-    ld      c,a
-    ex      de,hl
-    add     hl,bc               ; update attribute db
-    ex      de,hl
-    ex      af,af'
-    dec     a
-    jr      nz,atrow
-    ret
-;
-;
-; *********************** RSHAPE ***********************
-; input:    hl=>position
-;           a=>real/abstract flag
-;           de=>shape ptr
-;           column
-;
-; output:   skip, fill, attpos
-
-rshape:
-    push    hl
-    ex      af,af'              ; real shape
-    ld      h,$1f
-    ld      a,h
-    and     l                   ; trap lower 5 bits
-    ld      l,a
-    ld      a,h
-    sub     l                   ; substract from $1f
-    inc     a
-    and     h                   ;adjust for zero diff
-    ld      l,a
-    ex      af,af'
-    and     a                   ; 0=>abstract, 1=>real
-    ld      a,(column)
-    jr      nz,real
-    sub     l
-    ld      (fill),a
-    ld      a,l                 ; reload abs diff
-    ld      (skip),a
-    jr      calatt
-real:
-    cp      l                   ; take min of col/fill
-    jr      c,toobig            ; fill more than col
-    ld      a,l
-    and     a
-    jr      nz,toobig
-    ld      a,(column)
-toobig:
-    ld      (fill),a
-    xor     a
-    ld      (skip),a
-calatt:
-    pop     hl
-    push    hl
-    ld      a,h
-    and     $18
-    sra     a
-    sra     a
-    sra     a
-    add     a,$58
-    ld      h,a
-    ld      (attpos),hl
-    pop     hl
-    ret
-;
-;
-clrscr:
-    ld      hl,$4000            ; hl => start of screen        
-    ld      de,$4001
-    ld      bc,6143             ; size of screen $17ff
-    xor     a                   ; blank screen
-    ld      (hl),a
-    ldir
-    ld      hl,$5800            ; set first line for score
-    ld      de,$5801            ; of attribute file
-    ld      bc,31
-    ld      (hl),7              ; ink seven
-    ldir
-    ld      hl,$5820            ; set attribute
-    ld      de,$5821            ; start from second line
-    ld      bc,735
-    ld      (hl),a              ; (paper 0) * 8 + (ink 0)
-    ldir
-    ld      hl,$58a0            ; set highway
-    ld      de,$5960            ; high, middle, bottom
-    ld      bc,$5a20
-    ld      a,56                ; (paper 7) * 8+ (ink 0)
-    exx
-    ld      b,32                ; fill one line
-hwyatt:
-    exx
-    ld      (hl),a
-    ld      (de),a
-    ld      (bc),a
-    inc     hl
-    inc     de
-    inc     bc
-    exx
-    djnz    hwyatt
-    exx
-    ret
-;
-;
-shape:
-    push    hl                  ; save hl ptr
-    ld      a,(frgdir)
-    add     a,a
-    ld      hl,frgshp
-    ld      d,0
-    ld      e,a
-    add     hl,de               ; ptr to pos of shape
-    ld      e,(hl)
-    inc     hl
-    ld      d,(hl)
-    pop     hl
-    ret 
-;
-;
-; *********************** DISASC ***********************
-; display ASCII value from character set
-; NB: store DE, the message pointer HL stays them same after 
-; display
-; used BC register as well
-
-disasc:
-    push    bc
-    push    de
-    push    hl
-    ld      a,(de)              ; load ascii char
-    ld      l,a
-    ld      h,0
-    add     hl,hl               ; multiple of 8 bytes
-    add     hl,hl
-    add     hl,hl
-    ex      de,hl
-    ld      hl,chrset           ; start of character set
-    add     hl,de
-    ex      de,hl
-    pop     hl
-drwchr:
-    ld      b,8                 ; draw character
-    push    hl
-charlp:
-    ld      a,(de)
-    ld      (hl),a
-    inc     de
-    inc     h
-    djnz    charlp
-    pop     hl
-    pop     de
-    inc     hl                  ; pos ptr
-    inc     de                  ; message prt
-    pop     bc
-    djnz    disasc
-    ret
-;
-;    
-police:
-    exx
+7212 3A616F   05610         ld      a,(skip)
+7215 4F       05620         ld      c,a
+7216 0600     05630         ld      b,0
+7218 09       05640         add     hl,bc               ; skip pos ptr
+7219 87       05650         add     a,a                 ; multiple of 8 bytes
+721A 87       05660         add     a,a
+721B 87       05670         add     a,a
+721C 4F       05680         ld      c,a                 ; skip shape ptr
+721D EB       05690         ex      de,hl
+721E 09       05700         add     hl,bc
+721F EB       05710         ex      de,hl
+7220 CD44     05720         bit     0,h                 ; cross screen section
+7222 2804     05730         jr      z,noskip
+7224 3E07     05740         ld      a,7                 ; if yes, move up
+7226 84       05750         add     a,h
+7227 67       05760         ld      h,a
+7228 3A626F   05770 noskip  ld      a,(fill)
+722B A7       05780         and     a
+722C 2811     05790         jr      z,nxt
+722E 4F       05800         ld      c,a                 ; column to be filled
+722F E5       05810 lp1     push    hl                  ; fill character
+7230 0608     05820         ld      b,8
+7232 1A       05830 lp2     ld      a,(de)              ; fill character bytes
+7233 77       05840         ld      (hl),a
+7234 13       05850         inc     de
+7235 24       05860         inc     h
+7236 10FA     05870         djnz    lp2
+7238 E1       05880         pop     hl
+7239 0D       05890         dec     c
+723A 2803     05900         jr      z,nxt
+723C 23       05910         inc     hl                  ; next character
+723D 18F0     05920         jr      lp1
+723F 08       05930 nxt     ex      af,af'
+7240 E1       05940         pop     hl                  ; restore line ptr
+7241 D1       05950         pop     de                  ; shape db ptr
+7242 3D       05960         dec     a                   ; update row count
+7243 281A     05970         jr      z,ldattr
+7245 08       05980         ex      af,af'
+7246 A7       05990         and     a                   ; clear carry
+7247 0E20     06000         ld      c,$20
+7249 ED42     06010         sbc     hl,bc               ; one line up
+724B CB44     06020         bit     0,h                 ; cross screen section
+724D 2804     06030         jr      z,moddb
+724F 7C       06040         ld      a,h
+7250 D607     06050         sub     7
+7252 67       06060         ld      h,a
+7253 3A5F6F   06070 moddb   ld      a,(column)
+7256 87       06080         add     a,a
+7257 87       06090         add     a,a
+7258 87       06100         add     a,a                 ; update shape db
+7259 4F       06110         ld      c,a
+725A EB       06120         ex      de,hl
+725B 09       06130         add     hl,bc
+725C EB       06140         ex      de,hl
+725D 18B1     06150         jr      lp0
+725F 2A636F   06160 ldattr  ld      hl,(attpos)
+7262 ED5B6A6F 06170         ld      de,(attptr)
+7266 3A606F   06180         ld      a,(row)
+7269 08       06190 atrow   ex      af,af'
+726A D5       06200         push    de
+726B E5       06210         push    hl
+726C 3A616F   06220         ld      a,(skip)
+726F 4F       06230         ld      c,a
+7270 0600     06240         ld      b,0
+7272 09       06250         add     hl,bc               ; skip attribute file
+7273 EB       06260         ex      de,hl
+7274 09       06270         add     hl,bc               ; skip attribute database
+7275 EB       06280         ex      de,hl
+7276 3A626F   06290         ld      a,(fill)
+7279 A7       06300         and     a
+727A 2807     06310         jr      z,skipat            ; skip attribute
+727C 47       06320         ld      b,a                 ; fill attribute
+727D 1A       06330 attr2   ld      a,(de)
+727E 77       06340         ld      (hl),a
+727F 23       06350         inc     hl
+7280 13       06360         inc     de
+7281 10FA     06370         djnz    attr2
+7283 E1       06380 skipat  pop     hl
+7284 D1       06390         pop     de
+7285 3A5F6F   06400         ld      a,(column)
+7288 A7       06410         and     a                   ; clear carry
+7289 0E20     06420         ld      c,$20
+728B ED42     06430         sbc     hl,bc               ; next attribute line up
+728D 4F       06440         ld      c,a
+728E EB       06450         ex      de,hl
+728F 09       06460         add     hl,bc               ; update attribute db
+7290 EB       06470         ex      de,hl
+7291 08       06480         ex      af,af'
+7292 3D       06490         dec     a
+7293 20D4     06500         jr      nz,atrow
+7295 C9       06510         ret
+              06520 ;
+              06530 ;
+              06540 ; *********************** RSHAPE ***********************
+              06550 ;
+              06560 ; input:    hl=>position
+              06570 ;           a=>real/abstract flag
+              06580 ;           de=>shape ptr
+              06590 ;           column
+              06600 ;
+              06610 ; output:   skip, fill, attpos
+              06620 ;
+7296 E5       06630 rshape  push    hl
+7297 08       06640         ex      af,af'              ; real shape
+7298 261F     06650         ld      h,$1f
+729A 7C       06660         ld      a,h
+729B A5       06670         and     l                   ; trap lower 5 bits
+729C 6F       06680         ld      l,a
+729D 7C       06690         ld      a,h
+729E 95       06700         sub     l                   ; substract from $1f
+729F 3C       06710         inc     a
+72A0 A4       06720         and     h                   ;adjust for zero diff
+72A1 6F       06730         ld      l,a
+72A2 08       06740         ex      af,af'
+72A3 A7       06750         and     a                   ; 0=>abstract, 1=>real
+72A4 3A5F6F   06760         ld      a,(column)
+72A7 200A     06770         jr      nz,real
+72A9 95       06780         sub     l
+72AA 32616F   06790         ld      (fill),a
+72AD 7D       06800         ld      a,l                 ; reload abs diff
+72AE 32616F   06810         ld      (skip),a
+72B1 1811     06820         jr      calatt
+72B3 BD       06830 real    cp      l                   ; take min of col/fill
+72B4 3807     06840         jr      c,toobig            ; fill more than col
+72B6 7D       06850         ld      a,l
+72B7 A7       06860         and     a
+72B8 2003     06870         jr      nz,toobig
+72BA 3A5F6F   06880         ld      a,(column)
+72BD 32626F   06890 toobig  ld      (fill),a
+72C0 AF       06900         xor     a
+72C1 32616F   06910         ld      (skip),a
+72C4 E1       06920 calatt  pop     hl
+72C5 E5       06930         push    hl
+72C6 7C       06940         ld      a,h
+72C7 E618     06950         and     $18
+72C9 CB2F     06960         sra     a
+72CB CB2F     06970         sra     a
+72CD CB2F     06980         sra     a
+72CF C65B     06990         add     a,$58
+72D1 67       07000         ld      h,a
+72D2 22636F   07010         ld      (attpos),hl
+72D5 E1       07020         pop     hl
+72D6 C9       07030         ret
+              07040 ;
+              07050 ;
+72D7 210040   07060 clrscr  ld      hl,$4000            ; hl => start of screen        
+72DA 110140   07070         ld      de,$4001
+72DD 01FF17   07080         ld      bc,6143             ; size of screen $17ff
+72E0 AF       07090         xor     a                   ; blank screen
+72E1 77       07100         ld      (hl),a
+72E2 EDB0     07110         ldir
+72E4 210058   07120         ld      hl,$5800            ; set first line for score
+72E7 11015B   07130         ld      de,$5801            ; of attribute file
+72EA 011F00   07140         ld      bc,31
+72ED 3607     07150         ld      (hl),7              ; ink seven
+72EF EDB0     07160         ldir
+72F1 212058   07170         ld      hl,$5820            ; set attribute
+72F4 112158   07180         ld      de,$5821            ; start from second line
+72F7 01DF02   07190         ld      bc,735
+72FA 77       07200         ld      (hl),a              ; (paper 0) * 8 + (ink 0)
+72FB EDB0     07210         ldir
+72FD 21A058   07220         ld      hl,$58a0            ; set highway
+7300 116059   07230         ld      de,$5960            ; high, middle, bottom
+7303 01205A   07240         ld      bc,$5a20
+7306 3E3B     07250         ld      a,56                ; (paper 7) * 8+ (ink 0)
+7308 D9       07260         exx
+7309 0620     07270         ld      b,32                ; fill one line
+730B D9       07280 hwyatt  exx
+730C 77       07290         ld      (hl),a
+730D 12       07300         ld      (de),a
+730E 02       07310         ld      (bc),a
+730F 23       07320         inc     hl
+7310 13       07330         inc     de
+7311 03       07340         inc     bc
+7312 D9       07350         exx
+7313 10F6     07360         djnz    hwyatt
+7315 D9       07370         exx
+7316 C9       07380         ret
+              07390 ;
+              07400 ;
+7317 E5       07410 shape   push    hl                  ; save hl ptr
+7318 3A7B6E   07420         ld      a,(frgdir)
+731B 87       07430         add     a,a
+731C 21AF69   07440         ld      hl,frgshp
+731F 1600     07450         ld      d,0
+7321 5F       07460         ld      e,a
+7322 19       07470         add     hl,de               ; ptr to pos of shape
+7323 5E       07480         ld      e,(hl)
+7324 23       07490         inc     hl
+7325 56       07500         ld      d,(hl)
+7326 E1       07510         pop     hl
+7327 C9       07520         ret 
+              07530 ;
+              07540 ;
+              07550 ; *********************** DISASC ***********************
+              07560 ;
+              07570 ; display ASCII value from character set
+              07580 ; NB: store DE, the message pointer HL stays them same after 
+              07590 ; display
+              07600 ; used BC register as well
+              07610 ;
+              07620 ;
+7328 C5       07630 disasc  push    bc
+7329 D5       07640         push    de
+732A E5       07650         push    hl
+732B 1A       07660         ld      a,(de)              ; load ascii char
+732C 6F       07670         ld      l,a
+732D 2600     07680         ld      h,0
+732F 29       07690         add     hl,hl               ; multiple of 8 bytes
+7330 29       07700         add     hl,hl
+7331 29       07710         add     hl,hl
+7332 EB       07720         ex      de,hl
+7333 21003C   07730         ld      hl,chrset           ; start of character set
+7336 19       07740         add     hl,de
+7337 EB       07750         ex      de,hl
+7338 E1       07760         pop     hl
+7339 0608     07770 drwchr  ld      b,8                 ; draw character
+733B E5       07780         push    hl
+733C 1A       07790 charlp  ld      a,(de)
+733D 77       07800         ld      (hl),a
+733E 13       07810         inc     de
+733F 24       07820         inc     h
+7340 10FA     07830         djnz    charlp
+7242 E1       07840         pop     hl
+7243 D1       07850         pop     de
+7244 23       07860         inc     hl                  ; pos ptr
+7245 13       07870         inc     de                  ; message prt
+7246 C1       07880         pop     bc
+7247 10DF     07890         djnz    disasc
+7249 C9       07900         ret
+              07910 ;
+              07920 ;    
+734A D9       07930 police  exx
     ld      hl,pcarext
     ld      a,(hl)              ; test police car
     push    hl
