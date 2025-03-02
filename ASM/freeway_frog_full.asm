@@ -788,245 +788,232 @@
 70D9 E5       03320 regen   push    hl
 70DA CDCC77   03330 rand1   call    randno              ; random number routine
 70DD E607     03340         and     7                   ; generate random number
-    cp      6                   ; from 0 to 5
-    jr      nc,rand1
-    ld      bc,$5921            ; two char test
-    ld      hl,$5920            ; test jam
-    bit     0,a                 ; odd number is left
-    jr      z,rtraf             ; right traffic
-    ld      l,$0df
-    ld      c,$0de
-rtraf:
-    add     a,a                 ; get dbindex ptr in de
-    ld      e,a
-    ld      a,(bc)              ; test 2 char ahead
-    add     a,(hl)
-    and     a                   ; zero paper, zero ink
-    jr      z,loaddb            ; if 0, initialise new obj
-    pop     hl                  ; if jam, return
-    ret
-loaddb:
-    ld      d,a                 ; a = 0
-    ld      hl,dbindex          ; get db
-    add     hl,de
-    ld      e,(hl)              ; get corr database
-    inc     hl
-    ld      d,(hl)
-    ex      de,hl               ; source
-    pop     de                  ; destination
-    ld      bc,12
-    ldir
-    ld      a,2                 ; set regeneration flag
-    ld      (genflg),a          ; skip for 2 cycles
-    ret
-;
-;    
-; *********************** MOVTRF ***********************
-; move traffic routine
-;
-movtrf:
-    exx
-    ld      hl,ob1ext
-    ld      de,12
-    ld      b,6
-mtrflp
-    push    hl
-    exx
-    pop     hl                  ; existence
-    ld      a,(hl)              ; skip when no exist
-    and     a
-    jp      z,nxtmov
-    inc     hl                  ; cycle count
-    dec     (hl)                ; decr cycle count
-    jp      nz,nxtmov
-    inc     hl                  ; direction
-    ld      a,(hl)              ; 0 L to R, 1 R to L
-    inc     hl
-    inc     hl
-    ld      (posptr),hl         ; pos ptr
-    ld      e,(hl)              ; restore pos
-    inc     hl
-    ld      d,(hl)
-    inc     e                   ; move right
-    and     a
-    jr      z,ldpos
-    dec     e                   ; move left
-    dec     e                   ; move left
-ldpos:
-    ld      (newpos),de
-    ex      af,af'
-    ld      bc,5                 ; restore obj length
-    add     hl,bc
-    ld      a,(hl)              ; row
-    ld      (row),a
-    inc     hl
-    ld      a,(hl)              ; column
-    ld      (column),a          
-    dec     a
-    ld      c,a
-    ex      af,af'
-    and     a                   ; test direction
-    ex      de,hl
-    jr      nz,rtol             ; right to left
-    add     hl,bc               ; find head of truck
-    ld      a,l                 ; lob
-    cp      $40                 ; test right edge
-    jr      nc,moveok           ; skip test adhead if off
-    jr      testah              ; test ahead
-rtol:
-    ld      a,l                 ; new position, ahead as well
-    cp      $0c0                ; test left edge
-    jr      c,moveok            ; skip test ahead
-testah:
-    ld      a,h                 ; covert to attr
-    and     $18
-    sra     a
-    sra     a
-    sra     a
-    add     a,$58
-    ld      h,a
-    ld      bc,32
-    xor     a
-    ld      (jamflg),a          ; initialise jam flag
-    ld      a,(row)
-tahlop:
-    ex      af,af'
-    ld      a,(hl)              ; retrieve attr
-    and     7
-    jr      z,tfrog1            ; jump if black ink
-    cp      4                   ; test for green, frog
-    jr      nz,jam1             ; jam if not a frog
-    ld      a,1                 ; move if it is a frog
-    ld      (crhflg),a          ; set frog crash
-    jr      tfrog1
-jam1:
-    ld      (jamflg),a          ; set jamflg non zero
-tfrog1:
-    and     a
-    sbc     hl,bc
-    ex      af,af'
-    dec     a                   ; update row
-    jr      nz,tahlop
-    ld      a,(jamflg)          ; test traffic jam
-    and     a
-    jr      z,moveok            ; move if no jam
-    exx                         ; else stop move one cycle
-    inc     hl
-    inc     (hl)                ; load 2 to cycle count
-    inc     (hl)
-    dec     hl
-    exx
-    jr      nxtmov
-moveok:
-    ld      hl,(posptr)         ; retrieve ptr to pos
-    ld      de,(newpos)
-    ld      (hl),e              ; store newpos on db
-    inc     hl
-    ld      (hl),d
-    call    mvctrl              ; movement control   
-nxtmov:
-    exx
-    add     hl,de
-    dec     b
-    jp      nz,mtrflp
-    exx
-    ret    
-;
-;
-; *********************** MVCTRL ***********************
-; Traffic movement control routine
-;
-mvctrl:
-    dec     hl
-    dec     hl
-    ld      a,e                 ; de=>newpos, hl=>db ptr
-    and     $1f                 ; test edge
-    jr      nz,chgraf           ; change real abs flag
-    ld      a,(hl)
-    inc     a
-    and     1
-    ld      (hl),a
-chgraf:
-    dec     hl                  ; pt dir
-    ld      a,(hl)
-    and     a
-    jr      nz,toleft           ; right to left
-    ld      a,e
-    and     $1f                 ; if to right and abs
-    jr      nz,drwobj           
-    inc     hl                  ; get raf
-    ld      a,(hl)
-    dec     hl                  ; pt to dir
-    and     a                   ; if abstract, dies
-    jr      nz,drwobj
-    exx
-    ld      (hl),a              ; set non existence
-    exx
-    ret
-toleft:
-    ld      a,(column)
-    ld      c,a
-    ex      de,hl               ; test end of object
-    add     hl,bc               ; touches left edge
-    ld      a,l
-    cp      $0c0
-    ex      de,hl
-    jr      nz,drwobj
-    exx                         ; object nonexist as
-    ld      (hl),0              ; it moves off screen
-    exx
-    ret
-drwobj:
-    exx
-    ld      a,(hl)
-    inc     hl
-    ld      (hl),a              ; refill cycle count
-    dec     hl
-    exx
-    inc     hl
-    push    hl                  ; refill cycle count
-    inc     hl
-    inc     hl
-    inc     hl
-    ld      e,(hl)              ; retrieve shape ptr
-    inc     hl
-    ld      d,(hl)
-    inc     hl
-    ld      c,(hl)              ; retrieve attr ptr
-    inc     hl
-    ld      b,(hl)
-    ld      (attptr),bc
-    inc     hl
-    ld      a,(hl)
-    ld      (row),a
-    inc     hl
-    ld      a,(hl)
-    ld      (column),a
-    pop     hl
-    ld      a,(hl)              ; raflag
-    ld      hl,(newpos)
-    call    draw
-    ret
-;
-;
-; *********************** DRAW ***********************
-; input :   hl=>start of display pos
-;           de=>ptr to shape db
-;           a =>position of real/abstract flag
-;           c =>no. of col to be display
-;           col pass as var
-;
-; var       column, row, attr, drwpos, skip, fill
-;
-; reg:      a,bc,de,hl,a'
-;
-draw:
-    call    rshape              ; return row/col attptr
-    ld      a,(row)
-    ex      af,af'
-lp0:
-    push    de
-    push    hl                  ; store line ptr
+70DF FE06     03350         cp      6                   ; from 0 to 5
+70E1 30F7     03360         jr      nc,rand1
+70E3 012159   03370         ld      bc,$5921            ; two char test
+70E6 212059   03380         ld      hl,$5920            ; test jam
+70E9 CB47     03390         bit     0,a                 ; odd number is left
+70EB 2804     03400         jr      z,rtraf             ; right traffic
+70ED 2EDF     03410         ld      l,$0df
+70EF 0EDE     03420         ld      c,$0de
+70F1 87       03430 rtraf   add     a,a                 ; get dbindex ptr in de
+70F2 5F       03440         ld      e,a
+70F3 0A       03450         ld      a,(bc)              ; test 2 char ahead
+70F4 86       03460         add     a,(hl)
+70F5 A7       03470         and     a                   ; zero paper, zero ink
+70F6 2802     03480         jr      z,loaddb            ; if 0, initialise new obj
+70F8 E1       03490         pop     hl                  ; if jam, return
+70F9 C9       03500         ret
+70FA 57       03510 loaddb  ld      d,a                 ; a = 0
+70FB 21896E   03520         ld      hl,dbindex          ; get db
+70FE 19       03530         add     hl,de
+70FF 5E       03540         ld      e,(hl)              ; get corr database
+7100 23       03550         inc     hl
+7101 56       03560         ld      d,(hl)
+7102 EB       03570         ex      de,hl               ; source
+7103 D1       03580         pop     de                  ; destination
+7104 010C00   03590         ld      bc,12
+7107 EDB0     03600         ldir
+7109 EDB0     03610         ld      a,2                 ; set regeneration flag
+710B 32706F   03620         ld      (genflg),a          ; skip for 2 cycles
+710E C9       03630         ret
+              03640 ;
+              03650 ;
+              03660 ; *********************** MOVTRF ***********************
+              03670 ;
+              03680 ; move traffic routine
+              03690 ;
+710F D9       03700 movtrf  exx
+7110 21256E   03710         ld      hl,ob1ext
+7113 110C00   03720         ld      de,12
+7116 0606     03730         ld      b,6
+7118 E5       03740 mtrflp  push    hl
+7119 D9       03750         exx
+711A E1       03760         pop     hl                  ; existence
+711B 7E       03770         ld      a,(hl)              ; skip when no exist
+711C A7       03780         and     a
+711D CAA771   03790         jp      z,nxtmov
+7120 23       03800         inc     hl                  ; cycle count
+7121 35       03810         dec     (hl)                ; decr cycle count
+7122 C2A771   03820         jp      nz,nxtmov
+7125 23       03830         inc     hl                  ; direction
+7126 7E       03840         ld      a,(hl)              ; 0 L to R, 1 R to L
+7127 23       03850         inc     hl
+7128 23       03860         inc     hl
+7129 226E6F   03870         ld      (posptr),hl         ; pos ptr
+712C 5E       03880         ld      e,(hl)              ; restore pos
+712D 23       03890         inc     hl
+712E 56       03900         ld      d,(hl)
+712F 1C       03910         inc     e                   ; move right
+7130 A7       03920         and     a
+7131 2802     03930         jr      z,ldpos
+7133 1D       03940         dec     e                   ; move left
+7134 1D       03950         dec     e                   ; move left
+7135 ED536C6F 03960 ldpos   ld      (newpos),de
+7139 08       03970         ex      af,af'
+713A 010500   03980         ld      bc,5                 ; restore obj length
+713D 09       03990         add     hl,bc
+713E 7E       04000         ld      a,(hl)              ; row
+713F 32606F   04010         ld      (row),a
+7142 23       04020         inc     hl
+7143 7E       04030         ld      a,(hl)              ; column
+7144 325F6F   04040         ld      (column),a          
+7147 3D       04050         dec     a
+7148 4F       04060         ld      c,a
+7149 08       04070         ex      af,af'
+714A A7       04080         and     a                   ; test direction
+714B EB       04090         ex      de,hl
+714C 2008     04100         jr      nz,rtol             ; right to left
+714E 09       04110         add     hl,bc               ; find head of truck
+714F 7D       04120         ld      a,l                 ; lob
+7150 FE40     04130         cp      $40                 ; test right edge
+7152 3046     04140         jr      nc,moveok           ; skip test adhead if off
+7154 1805     04150         jr      testah              ; test ahead
+7156 7D       04160 rtol    ld      a,l                 ; new position, ahead as well
+7157 FEC0     04170         cp      $0c0                ; test left edge
+7159 383F     04180         jr      c,moveok            ; skip test ahead
+715B 7C       04190 testah  ld      a,h                 ; covert to attr
+715C E618     04200         and     $18
+715E CB2F     04210         sra     a
+7160 CB2F     04220         sra     a
+7162 CB2F     04230         sra     a
+7164 C658     04240         add     a,$58
+7166 67       04250         ld      h,a
+7167 012000   04260         ld      bc,32
+716A AF       04270         xor     a
+716B 32716F   04280         ld      (jamflg),a          ; initialise jam flag
+716E 3A606F   04290         ld      a,(row)
+7171 08       04300 tahlop  ex      af,af'
+7172 7E       04310         ld      a,(hl)              ; retrieve attr
+7173 E607     04320         and     7
+7175 280E     04330         jr      z,tfrog1            ; jump if black ink
+7177 FE04     04340         cp      4                   ; test for green, frog
+7179 2007     04350         jr      nz,jam1             ; jam if not a frog
+717B 3E01     04360         ld      a,1                 ; move if it is a frog
+717D 327C6F   04370         ld      (crhflg),a          ; set frog crash
+7180 1803     04380         jr      tfrog1
+7182 32716F   04390 jam1    ld      (jamflg),a          ; set jamflg non zero
+7185 A7       04400 tfrog1  and     a
+7186 ED42     04410         sbc     hl,bc
+7188 08       04420         ex      af,af'
+7189 3D       04430         dec     a                   ; update row
+718A 20E5     04440         jr      nz,tahlop
+718C 3A716F   04450         ld      a,(jamflg)          ; test traffic jam
+718F A7       04460         and     a
+7190 2808     04470         jr      z,moveok            ; move if no jam
+7192 D9       04480         exx                         ; else stop move one cycle
+7193 23       04490         inc     hl
+7194 34       04500         inc     (hl)                ; load 2 to cycle count
+7195 34       04510         inc     (hl)
+7196 2B       04520         dec     hl
+7197 D9       04530         exx
+7198 180D     04540         jr      nxtmov
+719A 2A6E6F   04550 moveok  ld      hl,(posptr)         ; retrieve ptr to pos
+719D ED5B6C6F 04560         ld      de,(newpos)
+71A1 73       04570         ld      (hl),e              ; store newpos on db
+71A2 23       04580         inc     hl
+71A3 72       04590         ld      (hl),d
+71A4 CDAF71   04600         call    mvctrl              ; movement control   
+71A7 D9       04610 nxtmov  exx
+71A8 19       04620         add     hl,de
+71A9 05       04630         dec     b
+71AA C21871   04640         jp      nz,mtrflp
+71AD D9       04650         exx
+71AE C9       04660         ret    
+              04670 ;
+              04680 ; *********************** MVCTRL ***********************
+              04690 ;
+              04700 ; Traffic movement control routine
+              04710 ;
+71AF 2B       04720 mvctrl  dec     hl
+71B0 2B       04730         dec     hl
+71B1 7B       04740         ld      a,e                 ; de=>newpos, hl=>db ptr
+71B2 E61F     04750         and     $1f                 ; test edge
+71B4 2005     04760         jr      nz,chgraf           ; change real abs flag
+71B6 7E       04770         ld      a,(hl)
+71B7 3C       04780         inc     a
+71B8 E601     04790         and     1
+71BA 77       04800         ld      (hl),a
+71BB 2B       04810 chgraf  dec     hl                  ; pt dir
+71BC 7E       04820         ld      a,(hl)
+71BD A7       04830         and     a
+71BE 200F     04840         jr      nz,toleft           ; right to left
+71C0 7B       04850         ld      a,e
+71C1 E61F     04860         and     $1f                 ; if to right and abs
+71C3 201B     04870         jr      nz,drwobj           
+71C5 23       04880         inc     hl                  ; get raf
+71C6 7E       04890         ld      a,(hl)
+71C7 2B       04900         dec     hl                  ; pt to dir
+71C8 A7       04910         and     a                   ; if abstract, dies
+71C9 2015     04920         jr      nz,drwobj
+71CB D9       04930         exx
+71CC 77       04940         ld      (hl),a              ; set non existence
+71CD D9       04950         exx
+71CE C9       04960         ret
+71CF 3A5F6F   04970 toleft  ld      a,(column)
+71D2 4F       04980         ld      c,a
+71D3 EB       04990         ex      de,hl               ; test end of object
+71D4 09       05000         add     hl,bc               ; touches left edge
+71D5 7D       05010         ld      a,l
+71D6 FEC0     05020         cp      $0c0
+71D8 EB       05030         ex      de,hl
+71D9 2005     05040         jr      nz,drwobj
+71DB D9       05050         exx                         ; object nonexist as
+71DC 3600     05060         ld      (hl),0              ; it moves off screen
+71DE D9       05070         exx
+71DF C9       05080         ret
+71E0 D9       05090 drwobj  exx
+71E1 7E       05100         ld      a,(hl)
+71E2 23       05110         inc     hl
+71E3 77       05120         ld      (hl),a              ; refill cycle count
+71E4 2B       05130         dec     hl
+71E5 D9       05140         exx
+71E6 23       05150         inc     hl
+71E7 E5       05160         push    hl                  ; refill cycle count
+71E8 23       05170         inc     hl
+71E9 23       05180         inc     hl
+71EA 23       05190         inc     hl
+71EB 5E       05200         ld      e,(hl)              ; retrieve shape ptr
+71EC 23       05210         inc     hl
+71ED 56       05220         ld      d,(hl)
+71EE 23       05230         inc     hl
+71EF 4E       05240         ld      c,(hl)              ; retrieve attr ptr
+71F0 23       05250         inc     hl
+71F1 46       05260         ld      b,(hl)
+71F2 ED436A6F 05270         ld      (attptr),bc
+71F6 23       05280         inc     hl
+71F7 7E       05290         ld      a,(hl)
+71F8 32606F   05300         ld      (row),a
+71FB 23       05310         inc     hl
+71FC 7E       05320         ld      a,(hl)
+71FD 325F6F   05330         ld      (column),a
+7200 E1       05340         pop     hl
+7201 7E       05350         ld      a,(hl)              ; raflag
+7202 2A6C6F   05360         ld      hl,(newpos)
+7205 CD0972   05370         call    draw
+7208 C9       05380         ret
+              05390 ;
+              05400 ;
+              05410 ;
+              05420 ; *********************** DRAW ***********************
+              05430 ;
+              05440 ; input :   hl=>start of display pos
+              05450 ;           de=>ptr to shape db
+              05460 ;           a =>position of real/abstract flag
+              05470 ;           c =>no. of col to be display
+              05480 ;           col pass as var
+              05490 ;
+              05500 ; var       column, row, attr, drwpos, 
+              05510 ;           skip, fill
+              05520 ;
+              05530 ;
+              05540 ; reg:      a,bc,de,hl,a'
+              05500 ;
+7209 CD9672   05560 draw    call    rshape              ; return row/col attptr
+720C 3A606F   05570         ld      a,(row)
+720F 08       05580         ex      af,af'
+7210 D5       05590 lp0     push    de
+7211 E5       05600         push    hl                  ; store line ptr
     ld      a,(skip)
     ld      c,a
     ld      b,0
