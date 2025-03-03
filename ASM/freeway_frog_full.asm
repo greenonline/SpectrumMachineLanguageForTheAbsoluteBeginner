@@ -1398,69 +1398,62 @@
 743F A7       09420         and     a
 7440 2803     09430         jr      z,nxtrpa
 7442 4F       09440         ld      c,a
-    ldir
-nxtspa:
-    pop     hl
-    ex      af,af'
-    dec     a
-    ret     z
-    ex      af,af'
-    ld      c,32
-    sbc     hl,bc
-    jr      spcat1
-;
-;
-respc:
-    ld      a,(pcarext)         ; test pc exist
-    and     a
-    ret     z
-    ld      de,row
-    ld      hl,pcstr+2
-    ld      bc,5
-    ldir                        ; retrieve 5 info
-    ex      de,hl               ; de storage ptr
-    ld      hl,(pcstr)          ; load pos
-    ld      a,(row)
-    ex      af,af'
-rpclp1:
-    push    hl                  ; save pos
-    ld      a,(skip)
-    ld      c,a
-    add     hl,bc
-    bit     0,h
-    jr      z,nsrps
-    ld      a,7
-    add     a,h
-    ld      h,a
-nsrps:
-    ld      a,(fill)
-    and     a
-    jr      z,nxtrpc
-    ld      c,a
-rpclp2:
-    push    hl
-    ld      b,8
-rpclp3:
-    ld      a,(de)              ; restore char
-    ld      (hl),a
-    inc     de
-    inc     h
-    djnz    rpclp3
-    pop     hl
-    inc     hl
-    dec     c
-    jr      nz,rpclp2
-nxtrpc:
-    pop     hl
-    ex      af,af'
-    dec     a                   ; upd row count
-    jr      z,rpcatr              ; restore police car
-    ex      af,af'
-    ld      c,32
-    sbc     hl,bc               ; move up one line
-    bit     0,h
-    jr      z,rpclp1
-    ld      a,h
+7443 EDB0     09450         ldir
+7445 E1       09460 nxtspa  pop     hl
+7446 08       09470         ex      af,af'
+7447 3D       09480         dec     a
+7448 C8       09490         ret     z
+7449 08       09500         ex      af,af'
+744A 0E20     09510         ld      c,32
+744C ED42     09520         sbc     hl,bc
+744E 18E6     09530         jr      spcat1
+              09540 ;
+              09550 ;
+7450 3A6D6E   09560 respc   ld      a,(pcarext)         ; test pc exist
+7453 A7       09570         and     a
+7454 C8       09580         ret     z
+7455 11606F   09590         ld      de,row
+7458 21AF6D   09600         ld      hl,pcstr+2
+745B 010500   09610         ld      bc,5
+745E EDB0     09620         ldir                        ; retrieve 5 info
+7460 EB       09630         ex      de,hl               ; de storage ptr
+7461 2AAD6D   09640         ld      hl,(pcstr)          ; load pos
+7464 3A606F   09650         ld      a,(row)
+7467 08       09660         ex      af,af'
+7468 E5       09670 rpclp1  push    hl                  ; save pos
+7469 3A616F   09680         ld      a,(skip)
+746C 4F       09690         ld      c,a
+746D 09       09700         add     hl,bc
+746E CB44     09710         bit     0,h
+7470 2804     09720         jr      z,nsrps
+7472 3E07     09730         ld      a,7
+7474 84       09740         add     a,h
+7475 67       09750         ld      h,a
+7476 3A626F   09760 nsrps   ld      a,(fill)
+7479 A7       09770         and     a
+747A 280F     09780         jr      z,nxtrpc
+747C 4F       09790         ld      c,a
+747D E5       09800 rpclp2  push    hl
+747E 0608     09810         ld      b,8
+7480 1A       09820 rpclp3  ld      a,(de)              ; restore char
+7481 77       09830         ld      (hl),a
+7482 13       09840         inc     de
+7483 24       09850         inc     h
+7484 10FA     09860         djnz    rpclp3
+7486 E1       09870         pop     hl
+7487 23       09880         inc     hl
+7488 0D       09890         dec     c
+7489 20F2     09900         jr      nz,rpclp2
+748B E1       09910 nxtrpc  pop     hl
+748C 08       09920         ex      af,af'
+748D 3D       09930         dec     a                   ; upd row count
+748E 280F     09940         jr      z,rpcatr              ; restore police car
+7490 08       09950         ex      af,af'
+7491 0E20     09960         ld      c,32
+7493 ED42     09970         sbc     hl,bc               ; move up one line
+7495 CD44     09980         bit     0,h
+7497 28CF     09990         jr      z,rpclp1
+7499 7C       10000         ld      a,h
     sub     7                   ; cross boundary
     ld      h,a
     jr      rpclp1
