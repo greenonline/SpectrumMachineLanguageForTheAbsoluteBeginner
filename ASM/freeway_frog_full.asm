@@ -1903,122 +1903,109 @@
 776E C9       14470         ret
               11480 ;
               14490 ;
-scrimg:
-    ld      de,image
-    ld      bc,5
-    ldir
-    ld      hl,image
-    ld      bc,$0430
-prezer:
-    ld      a,c
-    cp      (hl)                ; test $30
-    jr      nz,prezex
-    ld      (hl),$20            ; space fill
-    inc     hl
-    djnz    prezer
-prezex:
-    ret
-;
-;    
-siren:
-    ld      a,$0bf
-    in      a,($0fe)
-    and     1
-    jr      nz,nsound
-    ld      a,(soundf)          ; reset sound condition
-    inc     a
-    and     1
-    ld      (soundf),a
-nsound:
-    ld      a,(soundf)
-    and     a
-    jr      z,delay
-    ld      a,(chase)           ; is police car on
-    and     a
-    jr      z,delay
-    ld      a,(tonflg)
-    inc     a
-    and     1
-    ld      (tonflg),a
-    ld      hl,pcton1
-    jr      z,tone1
-    ld      hl,pcton2
-tone1:
-    ld      e,(hl)              ; de=duration*frequency
-    inc     hl
-    ld      d,(hl)
-    inc     hl
-    ld      c,(hl)
-    inc     hl
-    ld      b,(hl)
-    push    bc
-    pop     hl                  ; hl=437500/freq-30.125
-    call    $03b5
-    di
-    ret
-delay:
-    ld      bc,6144
-wait:
-    dec     bc
-    ld      a,b
-    or      c
-    jr      nz,wait
-    ret
-;
-;
-randno:
-    push    hl
-    push    bc
-    ld      hl,(rnd)
-    ld      b,(hl)
-    inc     hl
-    ld      a,$3f               ; bound pointer within ROM
-    and     h
-    ld      h,a
-    ld      a,b
-    ld      (rnd),hl
-    pop     bc
-    pop     hl
-    ret
-;
-;
-over:
-    ld      hl,score+1          ; high score manage
-    ld      de,hiscr
-    ld      b,5
-sortlp:
-    ld      a,(de)
-    cp      (hl)
-    jr      z,samscr            ; test 1st ne degit
-    ret     nc
-    jr      scrgt               ; update high score
-samscr:
-    inc     de
-    inc     hl
-    djnz    sortlp
-    ret
-scrgt:
-    ld      hl,score+1
-    ld      de,hiscr
-    ld      bc,5
-    ldir
-    ret
-;
-;    
-final:
-    ld      a,56                ; set white border
-    ld      (23624),a
-    ld      hl,$4000            ; start of screen
-    ld      de,$4001
-    ld      bc,6143             ; size of screen
-    ld      (hl),0
-    ldir
-    ld      hl,$5800            ; start of attribute file
-    ld      de,$5801
-    ld      bc,767
-    ld      (hl),56             ; white paper black ink
-    ldir
-    ret
-
-    end     start
-    
+776F 11596F   14500 scrimg  ld      de,image
+7772 010500   14510         ld      bc,5
+7775 EDB0     14520         ldir
+7777 21596F   14530         ld      hl,image
+777A 013004   14540         ld      bc,$0430
+777D 79       14550 prezer  ld      a,c
+777E BE       14560         cp      (hl)                ; test $30
+777F 2005     14570         jr      nz,prezex
+7781 3620     14580         ld      (hl),$20            ; space fill
+7783 23       14590         inc     hl
+7784 10F7     14600         djnz    prezer
+7786 C9       14610 prezex  ret
+              14620 ;
+              14630 ;
+7787 3EBF     14640 siren   ld      a,$0bf
+7789 DBFE     14650         in      a,($0fe)
+778B E601     14660         and     1
+778D 2009     14670         jr      nz,nsound
+778F 3A736F   14680         ld      a,(soundf)          ; reset sound condition
+7792 3C       14690         inc     a
+7793 E601     14700         and     1
+7795 32736F   14710         ld      (soundf),a
+7798 3A736F   14720 nsound: ld      a,(soundf)
+779B A7       14730         and     a
+779C 2825     14740         jr      z,delay
+779E 3A726F   14750         ld      a,(chase)           ; is police car on
+77A1 A7       14760         and     a
+77A2 281F     14770         jr      z,delay
+77A4 3A746F   14780         ld      a,(tonflg)
+77A7 3C       14790         inc     a
+77A8 E601     14800         and     1
+77AA 32746F   14810         ld      (tonflg),a
+77AD 210D6F   14820         ld      hl,pcton1
+77B0 2803     14830         jr      z,tone1
+77B2 21116F   14840         ld      hl,pcton2
+77B5 5E       14850 tone1   ld      e,(hl)              ; de=duration*frequency
+77B6 23       14860         inc     hl
+77B7 56       14870         ld      d,(hl)
+77B8 23       14880         inc     hl
+77B9 4E       14890         ld      c,(hl)
+77BA 23       14900         inc     hl
+77BB 46       14910         ld      b,(hl)
+77BC C5       14920         push    bc
+77BD E1       14930         pop     hl                  ; hl=437500/freq-30.125
+77BE CDB503   14940         call    $03b5
+77C1 F3       14950         di
+77C2 C9       14960         ret
+77C3 010018   14970 delay   ld      bc,6144
+77C6 0B       14980 wait    dec     bc
+77C7 78       14990         ld      a,b
+77C8 B1       15000         or      c
+77C9 20FB     15010         jr      nz,wait
+77CB C9       15020         ret
+              15030 ;
+              15040 ;
+77CC E5       15050 randno  push    hl
+77CD C5       15060         push    bc
+77CE 2A756F   15070         ld      hl,(rnd)
+77D1 46       15080         ld      b,(hl)
+77D2 23       15090         inc     hl
+77D3 3E3F     15100         ld      a,$3f               ; bound pointer within ROM
+77D5 A4       15110         and     h
+77D6 67       15120         ld      h,a
+77D7 78       15130         ld      a,b
+77D8 22756F   15140         ld      (rnd),hl
+77DB C1       15150         pop     bc
+77DC E1       15160         pop     hl
+77DD C9       15170         ret
+              15180 ;
+              15190 ;
+77DE 21446F   15200 over    ld      hl,score+1          ; high score manage
+77E1 11546F   15210         ld      de,hiscr
+77E4 0605     15220         ld      b,5
+77E6 1A       15230 sortlp  ld      a,(de)
+77E7 BE       15240         cp      (hl)
+77E8 2803     15250         jr      z,samscr            ; test 1st ne degit
+77EA D0       15260         ret     nc
+77EB 1805     15270         jr      scrgt               ; update high score
+77ED 13       15280 samscr  inc     de
+77EE 23       15290         inc     hl
+77EF 10F5     15300         djnz    sortlp
+77F1 C9       15310         ret
+77F2 21446F   15320 scrgt   ld      hl,score+1
+77F5 11546F   15330         ld      de,hiscr
+77F8 010500   15340         ld      bc,5
+77FB EDB0     15350         ldir
+77FD C9       15360         ret
+              15370 ;
+              15380 ;    
+77FE 3E38     15390 final   ld      a,56                ; set white border
+7800 32485C   15400         ld      (23624),a
+7803 210040   15410         ld      hl,$4000            ; start of screen
+7806 110140   15420         ld      de,$4001
+7809 01FF17   15430         ld      bc,6143             ; size of screen
+780C 3600     15440         ld      (hl),0
+780E EDB0     15450         ldir
+7810 210058   15460         ld      hl,$5800            ; start of attribute file
+7813 110158   15470         ld      de,$5801
+7816 01FF02   15480         ld      bc,767
+7819 3638     15490         ld      (hl),56             ; white paper black ink
+781B EDB0     15500         ldir
+781D C9       15510         ret
+              15520 ;
+              15530 ;
+6978          15540         end     start
+00000 Total errors
