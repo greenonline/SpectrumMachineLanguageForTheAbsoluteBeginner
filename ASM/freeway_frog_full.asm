@@ -1247,171 +1247,157 @@
               07910 ;
               07920 ;    
 734A D9       07930 police  exx
-    ld      hl,pcarext
-    ld      a,(hl)              ; test police car
-    push    hl
-    exx
-    and     a
-    jr      nz,movpc            ; move police car
-    pop     de                  ; db ext ptr
-    call    randno              ; move when multiple of
-    and     $1f                 ; 31
-    cp      $1f
-    ret     nz
-    ld      a,1                 ; set chase flag
-    ld      (chase),a
-    ld      hl,rpcdb            ; right pc
-    call    randno
-    and     1
-    jr      z,rhtpc
-    ld      hl,lpcdb
-rhtpc:
-    ld      bc,12
-    ldir
-    exx
-    push    hl
-    exx
-movpc:
-    pop     hl                  ; existence ptr
-    inc     hl
-    inc     hl                  ; direction
-    ld      a,(hl)
-    ld      b,a                 ; store dir
-    inc     hl
-    inc     hl                  ; posptr
-    ld      (posptr),hl
-    ld      e,(hl)
-    inc     hl
-    ld      d,(hl)
-    inc     e                   ; assume move right
-    and     a
-    jr      z,pcmrht            ; police car move right
-    dec     e
-    dec     e
-pcmrht:
-    ld      (newpos),de
-    ld      a,2                 ; two row
-    ld      (row),a
-    ld      a,6
-    ld      (column),a
-    push    bc                  ; direction
-    ld      a,(pcarrap)         ; real/abs flag
-    ex      de,hl
-    call    rshape              ; ret skip/fill, attr
-    ld      hl,(attpos)
-    pop     af
-    and     a                   ; if 1, ok
-    jr      nz,pctah            ; police car test ahead
-    ld      bc,5
-    add     hl,bc
-pctah:
-    ld      a,(hl)
-    and     7
-    ld      bc,32
-    and     a
-    sbc     hl,bc
-    cp      4
-    jr      z,isfrg2
-    ld      a,(hl)
-    and     7
-    cp      4
-    jr      nz,nfrog2
-isfrg2:
-    ld      a,1
-    ld      (crhflg),a          ; set crash flag
-    dec     a                   ; blank colour
-    ld      (hl),a              ; blank front of pc
-    add     hl,bc
-    ld      (hl),a              ; ** should blank front **
-nfrog2:
-    call    strpc               ; store new underneath
-    ld      hl,(posptr)
-    ld      de,(newpos)
-    ld      (hl),e
-    inc     hl
-    ld      (hl),d
-    call    mvctrl
-    exx                         ; if non exist
-    ld      a,(hl)
-    ld      (chase),a
-    exx
-    ret
-;
-;
-; *********************** STRPC ***********************
-;
-; store underneath police car
-;
-strpc:
-    ld      hl,(newpos)         ; pos ptr
-    ld      de,pcstr            ; storage loc
-    ex      de,hl
-    ld      (hl),e              ; store position
-    inc     hl
-    ld      (hl),d
-    inc     hl
-    ex      de,hl
-    ld      hl,row              ; load 5 bytes of info
-    ld      a,(hl)
-    ld      bc,5
-    ldir
-    ex      af,af'
-    ld      hl,(newpos)
-spclp1:
-    push    hl
-    ld      a,(skip)
-    ld      c,a
-    add     hl,bc
-    bit     0,h
-    jr      z,nssps
-    ld      a,h
-    add     a,7
-    ld      h,a
-nssps:
-    ld      a,(fill)
-    and     a
-    jr      z,nxtspc
-    ld      c,a
-spclp2:
-    push    hl                  ; restore char
-    ld      b,8
-spclp3:
-    ld      a,(hl)              ; store screen first
-    ld      (de),a
-    inc     de
-    inc     h
-    djnz    spclp3
-    pop     hl
-    inc     hl                  ; next char
-    dec     c
-    jr      nz,spclp2
-nxtspc:
-    pop     hl
-    ex      af,af'              ; upd row count
-    dec     a
-    jr      z,spcatr            ; restore police attr
-    ex      af,af'
-    ld      c,32
-    sbc     hl,bc               ; up one line
-    bit     0,h                 ; cross screen section?
-    jr      z,spclp1
-    ld      a,h
-    sub     7
-    ld      h,a
-    jr      spclp1
-spcatr:
-    ld      hl,(attpos)         ; attribute start pos
-    ld      a,(row)
-    ex      af,af'
-spcat1:
-    push    hl
-    ld      a,(skip)
-    ld      c,a
-    add     hl,bc
-    ld      a,(fill)
-    and     a
-    jr      z,nxtrpa
-    ld      c,a
+734B 216D6E   07940         ld      hl,pcarext
+734E 7E       07950         ld      a,(hl)              ; test police car
+734F E5       07960         push    hl
+7350 D9       07970         exx
+7351 A7       07980         and     a
+7352 2023     07990         jr      nz,movpc            ; move police car
+7354 D1       08000         pop     de                  ; db ext ptr
+7355 CDCC77   08010         call    randno              ; move when multiple of
+7358 E61F     08020         and     $1f                 ; 31
+735A FE1F     08030         cp      $1f
+735C C0       08040         ret     nz
+735D 3E01     08050         ld      a,1                 ; set chase flag
+735F 32726F   08060         ld      (chase),a
+7362 21F56E   08070         ld      hl,rpcdb            ; right pc
+7365 CDCC77   08080         call    randno
+7368 EG01     08090         and     1
+736A 2803     08100         jr      z,rhtpc
+736C 21DD6E   08110         ld      hl,lpcdb
+736F 010C00   08120 rhtpc   ld      bc,12
+7372 EDB0     08130         ldir
+7374 D9       08140         exx
+7375 E5       08150         push    hl
+7376 D9       08160         exx
+7377 E1       08170 movpc   pop     hl                  ; existence ptr
+7378 23       08180         inc     hl
+7379 23       08190         inc     hl                  ; direction
+737A 7E       08200         ld      a,(hl)
+737B 47       08210         ld      b,a                 ; store dir
+737C 23       08220         inc     hl
+737D 23       08230         inc     hl                  ; posptr
+737E 226E6F   08240         ld      (posptr),hl
+7381 5E       08250         ld      e,(hl)
+7382 23       08260         inc     hl
+7383 56       08270         ld      d,(hl)
+7384 1C       08280         inc     e                   ; assume move right
+7385 A7       08290         and     a
+7386 2802     08300         jr      z,pcmrht            ; police car move right
+7388 1D       08310         dec     e
+7389 1D       08320         dec     e
+738A ED536C6F 08330 pcmrht  ld      (newpos),de
+738E 3E02     08340         ld      a,2                 ; two row
+7390 32606F   08350         ld      (row),a
+7393 3E06     08360         ld      a,6
+7395 325F6F   08370         ld      (column),a
+7398 C5       08380         push    bc                  ; direction
+7399 3A706E   08390         ld      a,(pcarrap)         ; real/abs flag
+739C EB       08400         ex      de,hl
+739D CD9672   08410         call    rshape              ; ret skip/fill, attr
+73A0 2A636F   08420         ld      hl,(attpos)
+73A3 F1       08430         pop     af
+73A4 A7       08440         and     a                   ; if 1, ok
+73A5 2004     08450         jr      nz,pctah            ; police car test ahead
+73A7 010500   08460         ld      bc,5
+73AA 09       08470         add     hl,bc
+73AB 7E       08480 pctah   ld      a,(hl)
+73AC E607     08490         and     7
+73AE 012000   08500         ld      bc,32
+73B1 A7       08510         and     a
+73B2 ED42     08520         sbc     hl,bc
+73B4 FE04     08530         cp      4
+73B6 2807     08540         jr      z,isfrg2
+73B8 7E       08550         ld      a,(hl)
+73B9 E607     08560         and     7
+73BB FE04     08570         cp      4
+73BD 2009     08580         jr      nz,nfrog2
+73BF 3E01     08590 isfrg2  ld      a,1
+73C1 327C6F   08600         ld      (crhflg),a          ; set crash flag
+73C4 3D       08610         dec     a                   ; blank colour
+73C5 77       08620         ld      (hl),a              ; blank front of pc
+73C6 09       08630         add     hl,bc
+73C7 77       08640         ld      (hl),a              ; ** should blank front **
+73C8 CDDF73   08650 nfrog2  call    strpc               ; store new underneath
+73CB 2A6E6F   08660         ld      hl,(posptr)
+73CE ED5B6C6F 08670         ld      de,(newpos)
+73D2 73       08680         ld      (hl),e
+73D3 23       08690         inc     hl
+73D4 72       08700         ld      (hl),d
+73D5 CDAF71   08710         call    mvctrl
+73D8 D9       08720         exx                         ; if non exist
+73D9 7E       08730         ld      a,(hl)
+73DA 32726F   08740         ld      (chase),a
+73DD D9       08750         exx
+73DE C9       08760         ret
+              08770 ;
+              08780 ;
+              08790 ; *********************** STRPC ***********************
+              08800 ;
+              08810 ; store underneath police car
+              08820 ;
+73DF 2A6C6F   08830 strpc   ld      hl,(newpos)         ; pos ptr
+73E2 11AD6D   08840         ld      de,pcstr            ; storage loc
+73E5 EB       08850         ex      de,hl
+73E6 73       08860         ld      (hl),e              ; store position
+73E7 23       08870         inc     hl
+73E8 72       08880         ld      (hl),d
+73E9 23       08890         inc     hl
+73EA EB       08900         ex      de,hl
+73EB 21606F   08910         ld      hl,row              ; load 5 bytes of info
+73EE 7E       08920         ld      a,(hl)
+73EF 010500   08930         ld      bc,5
+73F2 EDB0     08940         ldir
+73F4 08       08950         ex      af,af'
+73F5 2A6C6F   08960         ld      hl,(newpos)
+73F8 E5       08970 spclp1  push    hl
+73F9 3A616F   08980         ld      a,(skip)
+73FC 4F       08990         ld      c,a
+73FD 09       09000         add     hl,bc
+73FE CB44     09010         bit     0,h
+7400 2804     09020         jr      z,nssps
+7402 7C       09030         ld      a,h
+7403 C607     09040         add     a,7
+7405 67       09050         ld      h,a
+7406 3A626F   09060 nssps   ld      a,(fill)
+7409 A7       09070         and     a
+740A 280F     09080         jr      z,nxtspc
+740C 4F       09090         ld      c,a
+740D E5       09100 spclp2  push    hl                  ; restore char
+740E 0608     09110         ld      b,8
+7410 7E       09120 spclp3  ld      a,(hl)              ; store screen first
+7411 12       09130         ld      (de),a
+7412 13       09140         inc     de
+7413 24       09150         inc     h
+7414 10FA     09160         djnz    spclp3
+7416 E1       09170         pop     hl
+7417 23       09180         inc     hl                  ; next char
+7418 0D       09190         dec     c
+7419 20F2     09200         jr      nz,spclp2
+741B E1       09210 nxtspc  pop     hl
+741C 08       09220         ex      af,af'              ; upd row count
+741D 3D       09230         dec     a
+741E 280F     09240         jr      z,spcatr            ; restore police attr
+7420 08       09250         ex      af,af'
+7421 0E20     09260         ld      c,32
+7423 ED42     09270         sbc     hl,bc               ; up one line
+7425 CD44     09280         bit     0,h                 ; cross screen section?
+7427 28CF     09290         jr      z,spclp1
+7429 7C       09300         ld      a,h
+742A D607     09310         sub     7
+742C 67       09320         ld      h,a
+742D 18C9     09330         jr      spclp1
+742F 2A636F   09340 spcatr  ld      hl,(attpos)         ; attribute start pos
+7432 3A606F   09350         ld      a,(row)
+7435 08       09360         ex      af,af'
+7436 E5       09370 spcat1  push    hl
+7437 3A616F   09380         ld      a,(skip)
+743A 4F       09390         ld      c,a
+743B 09       09400         add     hl,bc
+743C 3A626F   09410         ld      a,(fill)
+743F A7       09420         and     a
+7440 2803     09430         jr      z,nxtrpa
+7442 4F       09440         ld      c,a
     ldir
 nxtspa:
     pop     hl
