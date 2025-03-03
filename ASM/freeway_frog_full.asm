@@ -1454,499 +1454,455 @@
 7495 CD44     09980         bit     0,h
 7497 28CF     09990         jr      z,rpclp1
 7499 7C       10000         ld      a,h
-    sub     7                   ; cross boundary
-    ld      h,a
-    jr      rpclp1
-rpcatr:
-    ld      hl,(attpos)         ; attr start loading pos
-    ld      a,(row)
-    ex      af,af'
-rpcat1:
-    push    hl
-    ld      a,(skip)
-    ld      c,a
-    add     hl,bc
-    ld      a,(fill)
-    and     a
-    jr      z,nxtrpa
-    ex      de,hl
-    ld      c,a
-    ldir
-    ex      de,hl
-nxtrpa:
-    pop     hl
-    ex      af,af'
-    dec     a
-    ret     z
-    ex      af,af'
-    ld      c,32
-    sbc     hl,bc
-    jr      rpcat1
-;
-;    
-frog:
-    ld      a,(crhflg)          ; crash flag
-    and     a
-    jr      nz,frgcrh           ; frog crash
-    ld      (updwn),a           ; set no score
-    call    regfrg              ; regenerate frog
-    ld      hl,frgcyc           ; test move
-    dec     (hl)
-    ret     nz
-    dec     hl
-    ld      a,(hl)              ; reset cycle count
-    inc     hl
-    ld      (hl),a
-    call    movfrg
-    ld      a,(crhflg)
-    and     a
-    ret     z
-frgcrh:
-    call    crash
-    ret
-;
-;
-; *********************** REGFRG *********************** 
-;
-; Regenerate frog if any left
-; Set GAMFLG to 0 if none left
-
-regfrg:
-    ld      a,(frgext)
-    and     a
-    ret     nz
-    ld      hl,frgdb
-    ld      de,frgext
-    ld      bc,8
-    ldir
-    ld      hl,frgstn           ; update frog station
-    dec     (hl)                ; move 3 characters left
-    dec     (hl)
-    dec     (hl)
-    ld      hl,(frgpos)
-    ld      (oldfrg),hl
-    ld      (newfrg),hl
-    ld      hl,frgstr           ; init frg str for res
-    ld      de,frgstr+1         ; blank frog store
-    ld      bc,35
-    ld      (hl),0
-    ldir
-    ret
-;
-;   
-; *********************** MOVFRG *********************** 
-; move frog, store and retrieve
-;
-movfrg:
-    xor     a
-    ld      hl,$0e020           ; H=-32, L=32
-    ld      c,a                 ; c=>abs movement
-    ex      af,af'
-    ld      a,$0df              ; test right
-    in      a,($0fe)
-    and     1
-    jr      nz,left
-    inc     c
-    ld      de,frog2
-    ld      b,1
-left:
-    ld      a,$0df              ; test left
-    in      a,($0fe)
-    and     4
-    jr      nz,down
-    dec     c
-    ld      de,frog4
-    ld      b,3
-down:
-    ld      a,$0fd              ; test down
-    in      a,($0fe)
-    and     1
-    jr      nz,up
-    ld      a,c
-    add     a,l                 ; add 32
-    ld      c,a
-    ex      af,af'
-    dec     a
-    ex      af,af'              ; dec up/dwn flg
-    ld      de,frog3
-    ld      b,2
-up:
-    ld      a,$0f7              ; test up
-    in      a,($0fe)
-    and     1
-    jr      nz,valid
-    ld      a,c
-    add     a,h                 ; add -32
-    ld      c,a
-    ex      af,af'
-    inc     a
-    ex      af,af'
-    ld      de,frog1
-    ld      b,0
-valid:
-    ld      a,b                 ; store temp dir
-    ld      (temdir),a
-    ld      (temshp),de         ; store temp shape
-    xor     a
-    cp      c
-    ret     z                   ; if no move go back
-    ld      hl,(oldfrg)
-    bit     7,c                 ; test -ve
-    ld      b,a
-    ld      e,7                 ; for boundary adj
-    jr      z,netdwn            ; net move rht, dwn
-    dec     b
-    ld      e,-7
-netdwn:
-    add     hl,bc
-    bit     0,h
-    jr      z,valid1            ; no cross boundary
-    ld      a,h
-    add     a,e
-    ld      h,a                 ; adj hdb
-valid1:
-    ld      (tempos),hl
-    ex      de,hl
-    ld      a,$40               ; test upscr
-    cp      d
-    ld      a,e
-    jr      nz,valid2
-    cp      $20
-    jr      c,nvalid
-valid2:
-    and     $1f                 ; test right boundary
-    cp      $1f
-    jr      z,nvalid
-    ld      hl,$50be            ; test bot boundary
-    and     a
-    sbc     hl,de
-    jr      c,nvalid            
-    ld      hl,$507e            ; test frog station
-    sbc     hl,de
-    jr      nc,yvalid
-    ld      a,e                 ; test within box
-    and     $1f
-    ld      h,a
-    ld      a,(frgstn)
-    cp      $0a0                ; test last frog
-    jr      c,yvalid            ; mo mpre frog station
-    inc     a                   ; when no frog left
-    and     $1f
-    sub     h
-    jr      nc,nvalid
-yvalid:
-    ld      (newfrg),de         ; store new pos
-    ex      af,af'
-    ld      (updwn),a
-    ex      af,af'
-nvalid:
-    ld      hl,(oldfrg)         ; test oldfrg=newfrg
-    and     a
-    sbc     hl,de
-    ld      a,l
-    or      h
-    ret     z                   ; return if same
-    call    resfrg              ; restore frog
-    ld      hl,(newfrg)         ; update old frog pos
-    ld      (oldfrg),hl
-    ld      hl,temdir
-    ld      de,frgdir
-    ld      bc,5
-    ldir
-    call    strfrg
-    ret
-;
-;    
-resfrg:
-    ld      de,frgstr           ; storage ptr
-    ld      hl,(oldfrg)         ; restore from oldpos
-    push    hl
-    ld      a,2                 ; row counter
-    ex      af,af'
-rfrlp1:
-    push    hl
-    ld      c,2                 ; column counter
-rfrlp2:
-    push    hl
-    ld      b,8
-rfrlp3:
-    ld      a,(de)              ; restore from db
-    ld      (hl),a              ; into screen
-    inc     de
-    inc     h                   ; next char byte
-    djnz    rfrlp3
-    pop     hl
-    inc     hl
-    dec     c                   ; column count
-    jr      nz,rfrlp2
-    pop     hl
-    ex      af,af'
-    dec     a                   ; row count
-    jr      z,rfratr
-    ex      af,af'
-    and     a
-    ld      c,32                ; up one line
-    sbc     hl,bc
-    bit     0,h
-    jr      z,rfrlp1
-    ld      a,h
-    sub     7
-    ld      h,a
-    jr      rfrlp1
-rfratr:
-    pop     hl
-    ld      a,h
-    and     $18
-    sra     a
-    sra     a
-    sra     a
-    add     a,$58
-    ld      h,a
-    ld      a,2                 ; row counter
-    ex      af,af'
-rfrat1:
-    push    hl
-    ex      de,hl
-    ld      c,2                 ; restore attr
-    ldir
-    ex      de,hl
-    pop     hl
-    ex      af,af'
-    dec     a                   ; update row counter
-    ret     z
-    ex      af,af'
-    ld      c,32
-    sbc     hl,bc
-    jr      rfrat1
-;
-;
-strfrg:
-    ld      de,frgstr
-    ld      hl,(newfrg)         ; store base on newpos
-    exx
-    ld      hl,(frogsh)         ; load shape as well
-    exx
-    push    hl
-    ld      a,2
-    ex      af,af'
-sfrlp1:
-    push    hl
-    ld      c,2
-sfrlp2:
-    push    hl
-    ld      b,8                 ; store and load a char
-sfrlp3:
-    ld      a,(hl)
-    ld      (de),a
-    exx
-    ld      a,(hl)
-    inc     hl
-    exx
-    ld      (hl),a
-    inc     de
-    inc     h
-    djnz    sfrlp3
-    pop     hl
-    inc     hl                  ; next char
-    dec     c
-    jr      nz,sfrlp2
-    pop     hl
-    ex      af,af'
-    dec     a
-    jr      z,sfratr
-    ex      af,af'
-    and     a
-    ld      c,32
-    sbc     hl,bc               ; next row
-    bit     0,h
-    jr      z,sfrlp1
-    ld      a,h
-    sub     7
-    ld      h,a
-    jr      sfrlp1
-sfratr:
-    pop     hl
-    ld      a,h                 ; calculate attr pos
-    and     $18
-    sra     a
-    sra     a
-    sra     a
-    add     a,$58
-    ld      h,a
-    ld      a,2
-    ex      af,af'
-sfrat1:
-    ld      b,2
-    push    hl
-sfratlp:
-    ld      a,(hl)
-    ld      (de),a
-    ld      (hl),4              ; fill frog attr
-    inc     hl
-    inc     de
-    and     7                   ; test crash
-    jr      z,nfrog3
-    ld      a,1
-    ld      (crhflg),a
-nfrog3:
-    djnz    sfratlp
-    pop     hl
-    ex      af,af'
-    dec     a
-    ret     z
-    ex      af,af'
-    ld      c,32
-    sbc     hl,bc
-    jr      sfrat1
-;
-;
-crash:
-    xor     a
-    ld      (crhflg),a          ; reset crash flag
-    ld      (frgext),a          ; set frog nonexist
-    call    frgdie
-    call    resfrg
-    ld      hl,numfrg
-    dec     (hl)                ; decrease frog number
-    ret     nz
-    ld      (gamflg),a          ; zeroise game flag
-    ret                         ; when no frog left
-;
-;
-frgdie:
-    ld      hl,(oldfrg)         ; old pos of frg
-    ld      bc,$4002            ; red colour
-    exx
-    ld      hl,dieton           ; set die tone
-    exx
-    ld      a,h                 ; test end of journey
-    cp      b
-    jr      nz,notend
-    ld      a,l
-    cp      b
-    jr      nc,notend
-    ld      de,score+3          ; 100 pts bonus
-    ex      de,hl
-    inc     (hl)
-    ld      hl,score+4
-    call    disscr
-    ld      c,6                 ; yellow
-    exx
-    ld      hl,homton
-    exx
-notend:
-    ld      a,c
-    ld      (attr),a
-    ld      hl,(oldfrg)
-    ld      de,(newfrg)
-    call    drwfrg
-    ld      de,32               ; line adjust
-    add     hl,de
-    ex      af,af'
-    ld      a,(attr)
-    ex      af,af'
-    ld      b,5
-flaslp:
-    push    bc                  ; attribute ptr
-    push    hl                  ; blank ink black paper
-    xor     a
-    ld      (hl),a
-    inc     hl
-    ld      (hl),a
-    sbc     hl,de
-    ld      (hl),a
-    dec     hl
-    ld      (hl),a
-    call    frgton              ; generate froh tone
-    pop     hl
-    push    hl
-    ex      af,af'
-    ld      (hl),a              ; black paper, red or
-    inc     hl                  ; yellow ink
-    ld      (hl),a
-    and     a
-    sbc     hl,de
-    ld      (hl),a
-    dec     hl
-    ld      (hl),a
-    ex      af,af'
-    call    frgton
-    pop     hl
-    pop     bc
-    djnz    flaslp
-    ret
-;
-;
-frgton:
-    exx
-    push    hl
-    call    tone1
-    pop     hl
-    ld      bc,4                 ; move down database
-    ex      af,af'
-    cp      6
-    jr      z,home
-    ld      bc,-4                ; move up database
-home:
-    add     hl,bc
-    exx
-    ex      af,af'
-    ret
-;
-;    
-calscr:
-    ld      a,(frgext)          ; test existence
-    and     a
-    ret     z                   ; no update of score
-    ld      a,(updwn)           ; test up/down movement
-    and     a                   ; test any score
-    ret     z
-    ld      hl,score+4          ; add 10 to score
-    bit     7,a                 ; test move down
-    jr      nz,dwnscr           ; down score
-    inc     (hl)
-    jr      disscr              ; dis score
-dwnscr:
-    ld      a,(oldfrg+1)        ; test hob
-    cp      $40                 ; test first block
-    jr      nz,tlhwy            ; test low highway
-    ld      a,(oldfrg)
-    cp      $0c0                ; not even step on hwy
-    ret     c
-    inc     (hl)
-    jr      disscr
-tlhwy:
-    cp      $50                 ; test in low hwy
-    ret     nz
-    ld      a,(oldfrg)
-    cp      $20
-    ret     nc                  ; no score if step hwy
-    inc     (hl)
-disscr:
-    ld      b,4                 ; hl => tenth's pos
-addlop:
-    ld      a,(hl)
-crylop:
-    cp      $3a                 ; carry loop
-    jr      c,upddig            ; update digit
-    sub     10
-    dec     hl
-    inc     (hl)
-    inc     hl
-    jr      crylop
-upddig:
-    ld      (hl),a
-    dec     hl
-    djnz    addlop
-    ld      hl,score+1
-    call    scrimg              ; score image
-    ld      hl,$4006
-    ld      de,image
-    ld      b,5
-    call    disasc
-    ret
-;
-;
+749A D607     10010         sub     7                   ; cross boundary
+749C 67       10020         ld      h,a
+749D 18C9     10030         jr      rpclp1
+749F 2A636F   10040 rpcatr  ld      hl,(attpos)         ; attr start loading pos
+74A2 3A606F   10050         ld      a,(row)
+74A5 08       10060         ex      af,af'
+74A6 E5       10070 rpcat1  push    hl
+74A7 3A616F   10080         ld      a,(skip)
+74AA 4F       10090         ld      c,a
+74AB 09       10100         add     hl,bc
+74AC 3A626F   10110         ld      a,(fill)
+74AF A7       10120         and     a
+74B0 2805     10130         jr      z,nxtrpa
+74B2 EB       10140         ex      de,hl
+74B3 4F       10150         ld      c,a
+74B4 EDB0     10160         ldir
+74B6 EB       10170         ex      de,hl
+74B7 E1       10180 nxtrpa  pop     hl
+74B8 08       10190         ex      af,af'
+74B9 3D       10200         dec     a
+74BA C8       10210         ret     z
+74BB 08       10220         ex      af,af'
+74BC 0E20     10230         ld      c,32
+74BE ED42     10240         sbc     hl,bc
+74C0 18E4     10250         jr      rpcat1
+              10260 ;
+              10270 ;    
+74C2 3A7C6F   10280 frog    ld      a,(crhflg)          ; crash flag
+74C5 A7       10290         and     a
+74C6 2017     10300         jr      nz,frgcrh           ; frog crash
+74C8 325E6F   10310         ld      (updwn),a           ; set no score
+74CB CDE374   10320         call    regfrg              ; regenerate frog
+74CE 217A6E   10330         ld      hl,frgcyc           ; test move
+74D1 35       10340         dec     (hl)
+74D2 C0       10350         ret     nz
+74D3 2B       10360         dec     hl
+74D4 7E       10370         ld      a,(hl)              ; reset cycle count
+74D5 23       10380         inc     hl
+74D6 77       10390         ld      (hl),a
+74D7 CD1075   10400         call    movfrg
+74DA 3A7C6F   10410         ld      a,(crhflg)
+74DD A7       10420         and     a
+74DE C8       10430         ret     z
+74DF CD9176   10440 frgcrh  call    crash
+74E2 C9       10450         ret
+              10460 ;
+              10470 ; *********************** REGFRG *********************** 
+              10480 ;
+              10490 ; Regenerate frog if any left
+              10500 ; Set GAMFLG to 0 if none left
+              10510 ;
+74E3 3A796E   10520 regfrg  ld      a,(frgext)
+74E6 A7       10530         and     a
+74E7 C0       10540         ret     nz
+74E8 21816E   10550         ld      hl,frgdb
+74EB 11796E   10560         ld      de,frgext
+74EE 010800   10570         ld      bc,8
+74F1 EDB0     10580         ldir
+74F3 21846E   10590         ld      hl,frgstn           ; update frog station
+74F6 35       10600         dec     (hl)                ; move 3 characters left
+74F7 35       10610         dec     (hl)
+74F8 35       10620         dec     (hl)
+74F9 2A7C6E   10630         ld      hl,(frgpos)
+74FC 22786F   10640         ld      (oldfrg),hl
+74FF 227A6F   10650         ld      (newfrg),hl
+7502 21896D   10660         ld      hl,frgstr           ; init frg str for res
+7505 118A6D   10670         ld      de,frgstr+1         ; blank frog store
+7508 012300   10680         ld      bc,35
+750B 3600     10690         ld      (hl),0
+750D EDB0     10700         ldir
+750F C9       10710         ret
+              10720 ;
+              10730 ; *********************** MOVFRG *********************** 
+              10740 ;
+              10750 ; move frog, store and retrieve
+              10760 ;
+7510 AF       10770 movfrg  xor     a
+7511 2120E0   10780         ld      hl,$0e020           ; H=-32, L=32
+7514 4F       10790         ld      c,a                 ; c=>abs movement
+7515 08       10800         ex      af,af'
+7516 3EDF     10810         ld      a,$0df              ; test right
+7518 DBFE     10820         in      a,($0fe)
+751A E601     10830         and     1
+751C 2006     10840         jr      nz,left
+751E 0C       10850         inc     c
+751F 11D769   10860         ld      de,frog2
+7522 0601     10870         ld      b,1
+7524 3EDF     10880 left    ld      a,$0df              ; test left
+7526 DBFE     10890         in      a,($0fe)
+7528 E604     10900         and     4
+752A 2006     10910         jr      nz,down
+752C 0D       10920         dec     c
+752D 11176A   10930         ld      de,frog4
+7530 0603     10940         ld      b,3
+7532 3EFD     10950 down    ld      a,$0fd              ; test down
+7534 DBFE     10960         in      a,($0fe)
+7536 E601     10970         and     1
+7538 200B     10980         jr      nz,up
+753A 79       10990         ld      a,c
+753B B5       11000         add     a,l                 ; add 32
+753C 4F       11010         ld      c,a
+753D 08       11020         ex      af,af'
+753E 3D       11030         dec     a
+753F 08       11040         ex      af,af'              ; dec up/dwn flg
+7540 11F769   11050         ld      de,frog3
+7543 0602     11060         ld      b,2
+7545 3EF7     11070 up      ld      a,$0f7              ; test up
+7547 DBFE     11080         in      a,($0fe)
+7549 E601     11090         and     1
+754B 200B     11100         jr      nz,valid
+754D 79       11110         ld      a,c
+754E 84       11120         add     a,h                 ; add -32
+754F 4F       11130         ld      c,a
+7550 08       11140         ex      af,af'
+7551 3C       11150         inc     a
+7552 08       11160         ex      af,af'
+7553 11B769   11170         ld      de,frog1
+7556 0600     11180         ld      b,0
+7558 78       11190 valid   ld      a,b                 ; store temp dir
+7559 327D6F   11200         ld      (temdir),a
+755C ED53806F 11210         ld      (temshp),de         ; store temp shape
+7560 AF       11220         xor     a
+7561 B9       11230         cp      c
+7562 C8       11240         ret     z                   ; if no move go back
+7563 2A786F   11250         ld      hl,(oldfrg)
+7566 CD79     11260         bit     7,c                 ; test -ve
+7568 47       11270         ld      b,a
+7569 1E07     11280         ld      e,7                 ; for boundary adj
+756B 2803     11290         jr      z,netdwn            ; net move rht, dwn
+756D 05       11300         dec     b
+756E 1EF9     11310         ld      e,-7
+7570 09       11320 netdwn  add     hl,bc
+7571 CB44     11330         bit     0,h
+7573 2803     11340         jr      z,valid1            ; no cross boundary
+7575 7C       11350         ld      a,h
+7576 83       11360         add     a,e
+7577 67       11370         ld      h,a                 ; adj hdb
+7578 227E6F   11380 valid1  ld      (tempos),hl
+757B EB       11390         ex      de,hl
+757C 3E40     11400         ld      a,$40               ; test upscr
+757E BA       11410         cp      d
+757F 7B       11420         ld      a,e
+7580 2004     11430         jr      nz,valid2
+7582 FE20     11440         cp      $20
+7584 382F     11450         jr      c,nvalid
+7586 E61F     11460 valid2  and     $1f                 ; test right boundary
+7588 FE1F     11470         cp      $1f
+758A 2829     11480         jr      z,nvalid
+758C 21BE50   11490         ld      hl,$50be            ; test bot boundary
+758F A7       11500         and     a
+7590 ED52     11510         sbc     hl,de
+7592 3821     11520         jr      c,nvalid            
+7594 217E50   11530         ld      hl,$507e            ; test frog station
+7597 ED52     11540         sbc     hl,de
+7599 3011     11550         jr      nc,yvalid
+759B 7B       11560         ld      a,e                 ; test within box
+759C E61F     11570         and     $1f
+759E 67       11580         ld      h,a
+759F 3A846E   11590         ld      a,(frgstn)
+75A2 FEA0     11600         cp      $0a0                ; test last frog
+75A4 3806     11610         jr      c,yvalid            ; mo mpre frog station
+75A6 3C       11620         inc     a                   ; when no frog left
+75A7 E61F     11630         and     $1f
+75A9 94       11640         sub     h
+75AA 3009     11650         jr      nc,nvalid
+75AC ED537A6F 11660 yvalid  ld      (newfrg),de         ; store new pos
+75B0 08       11670         ex      af,af'
+75B1 325E6F   11680         ld      (updwn),a
+75B4 08       11690         ex      af,af'
+75B5 2A786F   11700 nvalid  ld      hl,(oldfrg)         ; test oldfrg=newfrg
+75B8 A7       11710         and     a
+75B9 ED52     11720         sbc     hl,de
+75BB 7D       11730         ld      a,l
+75BC B4       11740         or      h
+75BD C8       11750         ret     z                   ; return if same
+75BE CDD675   11760         call    resfrg              ; restore frog
+75C1 2A7A6F   11770         ld      hl,(newfrg)         ; update old frog pos
+75C4 22786F   11780         ld      (oldfrg),hl
+75C7 217D6F   11790         ld      hl,temdir
+75CA 117B6E   11800         ld      de,frgdir
+75CD 010500   11810         ld      bc,5
+75D0 EDB0     11820         ldir
+75D2 CD2876   11830         call    strfrg
+75D5 C9       11840         ret
+              11850 ;
+              11860 ;    
+75D6 11896D   11870 resfrg  ld      de,frgstr           ; storage ptr
+75D9 2A786F   11880         ld      hl,(oldfrg)         ; restore from oldpos
+75DC E5       11890         push    hl
+75DD 3E02     11900         ld      a,2                 ; row counter
+75DF 08       11910         ex      af,af'
+75E0 E5       11920 rfrlp1  push    hl
+75E1 0E02     11930         ld      c,2                 ; column counter
+75E3 E5       11940 rfrlp2  push    hl
+75E4 0608     11950         ld      b,8
+75E6 1A       11960 rfrlp3  ld      a,(de)              ; restore from db
+75E7 77       11970         ld      (hl),a              ; into screen
+75E8 13       11980         inc     de
+75E9 24       11990         inc     h                   ; next char byte
+75EA 10FA     12000         djnz    rfrlp3
+75EC E1       12010         pop     hl
+75ED 23       12020         inc     hl
+75EE 0D       12030         dec     c                   ; column count
+75EF 20F2     12040         jr      nz,rfrlp2
+75F1 E1       12050         pop     hl
+75F2 08       12060         ex      af,af'
+75F3 3D       12070         dec     a                   ; row count
+75F4 2810     12080         jr      z,rfratr
+75F6 08       12090         ex      af,af'
+75F7 A7       12100         and     a
+75F8 0E20     12110         ld      c,32                ; up one line
+75FA ED42     12120         sbc     hl,bc
+75FC CB44     12130         bit     0,h
+75FE 28E0     12140         jr      z,rfrlp1
+7600 7C       12150         ld      a,h
+7601 D607     12160         sub     7
+7603 67       12170         ld      h,a
+7604 18DA     12180         jr      rfrlp1
+7606 E1       12190 rfratr  pop     hl
+7607 7C       12200         ld      a,h
+7608 E618     12210         and     $18
+760A CB2F     12220         sra     a
+760C CB2F     12230         sra     a
+760E CB2F     12240         sra     a
+7610 C65B     12250         add     a,$58
+7612 67       12260         ld      h,a
+7613 3E02     12270         ld      a,2                 ; row counter
+7615 08       12280         ex      af,af'
+7616 E5       12290 rfrat1  push    hl
+7617 EB       12300         ex      de,hl
+7618 0E02     12310         ld      c,2                 ; restore attr
+761A EDB0     12320         ldir
+761C EB       12330         ex      de,hl
+761D E1       12340         pop     hl
+761E 08       12350         ex      af,af'
+761F 3D       12360         dec     a                   ; update row counter
+7620 C8       12370         ret     z
+7621 08       12380         ex      af,af'
+7622 0E20     12390         ld      c,32
+7624 ED42     12400         sbc     hl,bc
+7626 18EE     12410         jr      rfrat1
+              12420 ;
+              12430 ;
+7628 11896D   12440 strfrg  ld      de,frgstr
+762B 2A7A6F   12450         ld      hl,(newfrg)         ; store base on newpos
+762E D9       12460         exx
+762F 2A7E6E   12470         ld      hl,(frogsh)         ; load shape as well
+7632 D9       12480         exx
+7633 E5       12490         push    hl
+7634 3E02     12500         ld      a,2
+7636 08       12510         ex      af,af'
+7637 E5       12520 sfrlp1  push    hl
+7638 0E02     12530         ld      c,2
+763A E5       12540 sfrlp2  push    hl
+763B 0608     12550         ld      b,8                 ; store and load a char
+763D 7E       12560 sfrlp3  ld      a,(hl)
+763E 12       12570         ld      (de),a
+763F D9       12580         exx
+7640 7E       12590         ld      a,(hl)
+7641 23       12600         inc     hl
+7642 D9       12610         exx
+7643 77       12620         ld      (hl),a
+7644 13       12630         inc     de
+7645 24       12640         inc     h
+7646 10F5     12650         djnz    sfrlp3
+7648 E1       12660         pop     hl
+7649 23       12670         inc     hl                  ; next char
+764A 0D       12680         dec     c
+764B 20ED     12690         jr      nz,sfrlp2
+764D E1       12700         pop     hl
+764E 08       12710         ex      af,af'
+764F 3D       12720         dec     a
+7650 2810     12730         jr      z,sfratr
+7652 08       12740         ex      af,af'
+7653 A7       12750         and     a
+7654 0E20     12760         ld      c,32
+7656 ED42     12770         sbc     hl,bc               ; next row
+7658 CB44     12780         bit     0,h
+765A 28DB     12790         jr      z,sfrlp1
+765C 7C       12800         ld      a,h
+765D D607     12810         sub     7
+765F 67       12820         ld      h,a
+7660 18D5     12830         jr      sfrlp1
+7662 E1       12840 sfratr  pop     hl
+7663 7C       12850         ld      a,h                 ; calculate attr pos
+7664 E618     12860         and     $18
+7666 CB2F     12870         sra     a
+7668 CB2F     12880         sra     a
+766A CB2F     12890         sra     a
+766C C658     12900         add     a,$58
+766E 67       12910         ld      h,a
+766F 3E02     12920         ld      a,2
+7671 08       12930         ex      af,af'
+7672 0602     12940 sfrat1  ld      b,2
+7674 E5       12950         push    hl
+7675 7E       12960 sfratlp ld      a,(hl)
+7676 12       12970         ld      (de),a
+7677 3604     12980         ld      (hl),4              ; fill frog attr
+7679 23       12990         inc     hl
+767A 13       13000         inc     de
+767B E607     13010         and     7                   ; test crash
+767D 2805     13020         jr      z,nfrog3
+767F 3E01     13030         ld      a,1
+7681 327C6F   13040         ld      (crhflg),a
+7684 10EF     13050 nfrog3  djnz    sfratlp
+7686 E1       13060         pop     hl
+7687 08       13070         ex      af,af'
+7688 3D       13080         dec     a
+7689 C8       13090         ret     z
+768A 08       13100         ex      af,af'
+768B 0E20     13110         ld      c,32
+768D ED42     13120         sbc     hl,bc
+768F 18E1     13130         jr      sfrat1
+              13140 ;
+              13150 ;
+7691 AF       13160 crash   xor     a
+7692 327C6F   13170         ld      (crhflg),a          ; reset crash flag
+7695 32796E   13180         ld      (frgext),a          ; set frog nonexist
+7698 CDA776   13190         call    frgdie
+769B CDD675   13200         call    resfrg
+769E 21826F   13210         ld      hl,numfrg
+76A1 35       13220         dec     (hl)                ; decrease frog number
+76A2 C0       13230         ret     nz
+76A3 32776F   13240         ld      (gamflg),a          ; zeroise game flag
+76A6 C9       13250         ret                         ; when no frog left
+              13260 ;
+              13270 ;
+76A7 2A786F   13280 frgdie  ld      hl,(oldfrg)         ; old pos of frg
+76AA 010240   13290         ld      bc,$4002            ; red colour
+76AD D9       13300         exx
+76AE 21396F   13310         ld      hl,dieton           ; set die tone
+76B1 D9       13320         exx
+76B2 7C       13330         ld      a,h                 ; test end of journey
+76B3 B8       13340         cp      b
+76B4 2016     13350         jr      nz,notend
+76B6 7D       13360         ld      a,l
+76B7 B8       13370         cp      b
+76B8 3012     13380         jr      nc,notend
+76BA 11466F   13390         ld      de,score+3          ; 100 pts bonus
+76BD EB       13400         ex      de,hl
+76BE 34       13410         inc     (hl)
+76BF 21476F   13420         ld      hl,score+4
+76C2 CD4B77   13430         call    disscr
+76C5 0E06     13440         ld      c,6                 ; yellow
+76C7 D9       13450         exx
+76C8 21156F   13460         ld      hl,homton
+76CB D9       13470         exx
+76CC 79       13480 notend  ld      a,c
+76CD 32656F   13490         ld      (attr),a
+76D0 2A786F   13500         ld      hl,(oldfrg)
+76D3 ED5B7E6E 13510         ld      de,(newfrg)
+76D7 CD7A70   13520         call    drwfrg
+76DA 112000   13530         ld      de,32               ; line adjust
+76DD 19       13540         add     hl,de
+76DE 08       13550         ex      af,af'
+76DF 3A656F   13560         ld      a,(attr)
+76E2 08       13570         ex      af,af'
+76E3 0605     13580         ld      b,5
+76E5 C5       13590 flaslp  push    bc                  ; attribute ptr
+76E6 E5       13600         push    hl                  ; blank ink black paper
+76E7 AF       13610         xor     a
+76E8 77       13620         ld      (hl),a
+76E9 23       13630         inc     hl
+76EA 77       13640         ld      (hl),a
+76EB ED52     13650         sbc     hl,de
+76ED 77       13660         ld      (hl),a
+76EE 2B       13670         dec     hl
+76EF 77       13680         ld      (hl),a
+76F0 CD0877   13690         call    frgton              ; generate froh tone
+76F3 E1       13700         pop     hl
+76F4 E5       13710         push    hl
+76F5 08       13720         ex      af,af'
+76F6 77       13730         ld      (hl),a              ; black paper, red or
+76F7 23       13740         inc     hl                  ; yellow ink
+76F8 77       13750         ld      (hl),a
+76F9 A7       13760         and     a
+76FA ED52     13770         sbc     hl,de
+76FC 77       13780         ld      (hl),a
+76FD 2B       13790         dec     hl
+76FE 77       13800         ld      (hl),a
+76FF 08       13810         ex      af,af'
+7700 CD0877   13820         call    frgton
+7703 E1       13830         pop     hl
+7704 C1       13840         pop     bc
+7705 10DE     13850         djnz    flaslp
+7707 C9       13860         ret
+              13870 ;
+              13880 ;
+7708 D9       13890 frgton  exx
+7709 E5       13900         push    hl
+770A CDB577   13910         call    tone1
+770D E1       13920         pop     hl
+770E 010400   13930         ld      bc,4                 ; move down database
+7711 08       13940         ex      af,af'
+7712 FE06     13950         cp      6
+7714 2804     13960         jr      z,home
+7716 01FCFF   13970         ld      bc,-4                ; move up database
+7719 09       13980 home    add     hl,bc
+771A D9       13990         exx
+771B 08       14000         ex      af,af'
+771C C9       14010         ret
+              14020 ;
+              14030 ;    
+771D 3A796E   14040 calscr  ld      a,(frgext)          ; test existence
+7720 A7       14050         and     a
+7721 C8       14060         ret     z                   ; no update of score
+7722 3A5E6F   14070         ld      a,(updwn)           ; test up/down movement
+7725 A7       14080         and     a                   ; test any score
+7726 C8       14090         ret     z
+7727 21476F   14100         ld      hl,score+4          ; add 10 to score
+772A CD7F     14110         bit     7,a                 ; test move down
+772C 2003     14120         jr      nz,dwnscr           ; down score
+772E 34       14130         inc     (hl)
+772F 181A     14140         jr      disscr              ; dis score
+7731 3A796F   14150 dwnscr  ld      a,(oldfrg+1)        ; test hob
+7734 FE40     14160         cp      $40                 ; test first block
+7736 2009     14170         jr      nz,tlhwy            ; test low highway
+7738 3A786F   14180         ld      a,(oldfrg)
+773B FEC0     14190         cp      $0c0                ; not even step on hwy
+773D D8       14200         ret     c
+773E 34       14210         inc     (hl)
+773F 180A     14220         jr      disscr
+7741 FE50     14230 tlhwy   cp      $50                 ; test in low hwy
+7743 C0       14240         ret     nz
+7744 3A786F   14250         ld      a,(oldfrg)
+7747 FE20     14260         cp      $20
+7749 D0       14270         ret     nc                  ; no score if step hwy
+774A 34       14280         inc     (hl)
+774B 0604     14290 disscr  ld      b,4                 ; hl => tenth's pos
+774D 7E       14300 addlop  ld      a,(hl)
+774E FE3A     14310 crylop  cp      $3a                 ; carry loop
+7750 3807     14320         jr      c,upddig            ; update digit
+7752 D60A     14330         sub     10
+7754 2B       14340         dec     hl
+7755 34       143450        inc     (hl)
+7756 23       14360         inc     hl
+7757 18F5     14370         jr      crylop
+7759 77       14380 upddig  ld      (hl),a
+775A 2B       14390         dec     hl
+775B 10F0     14400         djnz    addlop
+775D 21446F   14410         ld      hl,score+1
+7760 CD6F77   14420         call    scrimg              ; score image
+7763 210640   14430         ld      hl,$4006
+7766 11596F   14440         ld      de,image
+7769 0605     14450         ld      b,5
+776B CD2873   14460         call    disasc
+776E C9       14470         ret
+              11480 ;
+              14490 ;
 scrimg:
     ld      de,image
     ld      bc,5
