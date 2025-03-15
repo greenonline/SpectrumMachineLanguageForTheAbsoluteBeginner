@@ -7,9 +7,7 @@ Hexextractor - Extract a hex dump from assembler listing
 
 =head1 SYNOPSIS
 
-    use My:: Hexextractor;
-    my $object = My:: Hexextractor->new();
-    print $object->as_string;
+    cat freeway_frog_full.asm | perl hexextractor.pl
 
 =head1 DESCRIPTION
 
@@ -27,11 +25,11 @@ use strict;
 # ### End of use
 
 # ### Start of globals
-
-our $debug = 0;                             # Should be 0
-
-our $do_ascii = 1;                          # Enable additional ascii character dump
-our $do_caps = 1;                           # Enable upper case hex
+use constant DEBUG => 0;                    # Should be 0
+use constant DO_ASCII => 1;                 # Enable additional ascii character dump
+use constant DO_CAPS => 1;                  # Enable upper case hex
+use constant MOD_8 => 0;                    # Find nearest lowest mod 8 address
+use constant ADD_8 => 1;                    # Increment address by 8
 
 our $address_SOL = "0000";                  # Address of start of hex buffer line
                                             # Always a factor of 8 (8 byte boundary)
@@ -63,13 +61,13 @@ while(my $line = <>) {
     # Get the standard hex listing with address and hexcode 
     # Do the grep for a string of double digit hex numbers seperated by space
 
-    print $line."\n" if $debug;
+    print $line."\n" if DEBUG;
     my $this_line_of_hexcode = $line;
     # Remove any spaces
     $this_line_of_hexcode =~ s/ //g;
     # get number of bytes
     $num_bytes = length($this_line_of_hexcode)/2;
-    print "$this_line_of_hexcode -> $num_bytes\n" if $main::debug;
+    print "$this_line_of_hexcode -> $num_bytes\n" if DEBUG;
     # get the bytes
     $hexcode_to_parse = $this_line_of_hexcode;
 
@@ -92,16 +90,16 @@ while(my $line = <>) {
       $hexcode_to_parse = $this_line_of_hexcode;
 
       parse_the_hex();
-      print  "Address: $address     Hex: $this_line_of_hexcode   # bytes: $num_bytes\n" if $debug;
+      print  "Address: $address     Hex: $this_line_of_hexcode   # bytes: $num_bytes\n" if DEBUG;
       for(my $i = 0; $i < $num_bytes; ++$i) {
-        print $array[$i]." " if $debug;
+        print $array[$i]." " if DEBUG;
       }
-      print "\n" if $debug;
+      print "\n" if DEBUG;
 
       # Is address divisible by 8?
       # If so, assign to address_SOL and flag to print
       if (address_div_8($address)){
-        reset_the_line();
+        reset_the_lines(MOD_8);
       } else {
         # Check here for sudden address change
         check_for_address_change();
@@ -169,7 +167,7 @@ sub to_hex
 {
   my $num =shift;
 
-  if ($do_caps) {
+  if (DO_CAPS) {
     return sprintf '%02X', $num;
   } else {
     return sprintf '%02x', $num;
@@ -188,7 +186,7 @@ sub check_for_address_change_simple
 {
   # Check here for sudden address change
   if (hex($address) > (hex($address_SOL)+8) || hex($address) < hex($address_SOL)) {
-    reset_the_line();
+    reset_the_lines(MOD_8);
   }
 }
 
@@ -203,18 +201,18 @@ sub check_for_address_change
   # Check here for sudden address change
   my $tmp_address = hex($main::address);
   my $tmp_address_SOL = hex($main::address_SOL);
-  print "tmp_addr: $tmp_address  :::: tmp_addr_SOL:  $tmp_address_SOL\n" if $main::debug;
+  print "tmp_addr: $tmp_address  :::: tmp_addr_SOL:  $tmp_address_SOL\n" if DEBUG;
   # Check to see if current address is out the line
   # ... i.e. out of the range of 8 addresses for this line
   if (($tmp_address > $tmp_address_SOL+8) || ($tmp_address < $tmp_address_SOL)) {
-    reset_the_line();
+    reset_the_lines(MOD_8);
   }
   # Check to see if current address is contiguous
   # ... i.e. follows the previous
   #if($main::address <> $main::address_SOL + $main::current_hexcode_line_buffer_byte ) {
   elsif($tmp_address != $tmp_address_SOL + $main::current_hexcode_line_buffer_byte - 1 ) {
     $main::current_hexcode_line_buffer_byte = $tmp_address - $tmp_address_SOL + 1;
-    $main::current_ascii_line_buffer_byte = $tmp_address - $tmp_address_SOL + 1 if $do_ascii;
+    $main::current_ascii_line_buffer_byte = $tmp_address - $tmp_address_SOL + 1 if DO_ASCII;
   }
 }
 
@@ -250,7 +248,7 @@ sub do_the_print
   # Print previous line (if not totally blank)
   if (not $main::hexcode_line_buffer eq $template){
     blank_any_x();
-    if (not $do_ascii) {
+    if (not DO_ASCII) {
       print "$main::address_SOL: $main::hexcode_line_buffer\n";
     } else {
       print "$main::address_SOL: $main::hexcode_line_buffer  $main::ascii_line_buffer\n";
@@ -298,33 +296,21 @@ sub reset_ascii_output_buffer
   $main::current_ascii_line_buffer_byte = 1;
 }
 
-=item reset_the_line()
-
-Print and reset the hex line output buffer
-
-=cut
-
-sub reset_the_line
-{
-  do_the_print();
-
-  # Reset the line
-  reset_the_lines(0);
-}
-
 =item reset_the_lines()
+
+Print and reset the hex line output buffer.
 
 A unified reset of the line buffers (ascii and hex). 
 
-Pass 1 to calculate start of line address.
-Pass 0 to use the address of the current assembler line.
+Pass 1 to calculate start of line address (+8).
+Pass 0 to use the address of the current assembler line to determine nearest mod 8.
 
 =cut
 
 sub reset_the_lines
 {
   my $do_calc = shift;
-  reset_ascii_output_buffer() if $do_ascii;     # Do in this order! -> #1
+  reset_ascii_output_buffer() if DO_ASCII;     # Do in this order! -> #1
   reset_hexcode_output_buffer();   # Do in this order! -> #1
   if ($do_calc){
     calc_next_address_SOL();         # Do in this order! -> #2
@@ -376,7 +362,7 @@ Replace the "x" place markers with the hex code for the bytes
 sub do_the_string_thing
 {
   for (my $index = 0; $index < $main::num_bytes; $index++) {
-    print "$main::hexcode_line_buffer   :::  $main::current_hexcode_line_buffer_byte  :: $main::array[$index] -> @main::array\n" if $main::debug;
+    print "$main::hexcode_line_buffer   :::  $main::current_hexcode_line_buffer_byte  :: $main::array[$index] -> @main::array\n" if DEBUG;
 
     # Substitute the 2 digit hex number into the buffer,
     # at the correct location.
@@ -384,7 +370,7 @@ sub do_the_string_thing
     substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = to_hex(hex($main::array[$index]));
     $main::current_hexcode_line_buffer_byte = $main::current_hexcode_line_buffer_byte +1;
 
-    do_the_ascii_thing($main::array[$index]) if $do_ascii;
+    do_the_ascii_thing($main::array[$index]) if DO_ASCII;
 
     check_over_8();
   }
@@ -403,7 +389,7 @@ sub check_over_8
     do_the_print();
 
     # Reset the line
-    reset_the_lines(1);
+    reset_the_lines(ADD_8);
   }
 }
 
