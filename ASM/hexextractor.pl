@@ -30,9 +30,12 @@ use strict;
 
 our $debug = 0;                             # Should be 0
 
+our $do_ascii = 1;                          # Enable additional ascii character dump
+
 our $address_SOL = "0000";                  # Address of start of hex buffer line
                                             # Always a factor of 8 (8 byte boundary)
-our $template = "xx xx xx xx xx xx xx xx";  # Template of The boilerplate of the output
+our $template = "xx xx xx xx xx xx xx xx";  # Template of the boilerplate of the output
+our $ascii_template = "........";           # Template of the boilerplate of the ascii output
 our $hexcode_line_buffer = $template;       # The boilerplate of the output
                                             # Insert hex over the xx
 our $current_hexcode_line_buffer_byte = 1;  # Pointer to which byte in the buffer
@@ -41,6 +44,8 @@ our $address;                               # Address of current line read
 our $hexcode_to_parse;                      # Hexcode of current line read
 our $num_bytes;                             # Number of bytes of Hexcode in current line read
 our @array;                                 # Will hold hex bytes of current line read
+our $ascii_line_buffer = $ascii_template;       # The boilerplate of the output
+our $current_ascii_line_buffer_byte = 1;  # Pointer to which byte in the buffer
 
 # ### End of globals
 
@@ -112,6 +117,47 @@ do_the_print();
 
 =over
 
+=item print_ascii_line()
+
+Returns ASCII buffer line.
+
+=cut
+
+sub print_ascii_line
+{
+  return $main::ascii_line_buffer;
+}
+
+=item do_the_ascii_thing()
+
+Populates the ASCII buffer line with characters.
+
+=cut
+
+sub do_the_ascii_thing
+{
+  my $num = shift;
+
+  if (hex($num)>32 and hex($num)<128) {
+    substr($main::ascii_line_buffer, $main::current_ascii_line_buffer_byte-1, 1) = to_ascii(hex($num)); # deletes the substring in offset 0-2
+  }
+  $main::current_ascii_line_buffer_byte++;
+
+}
+
+=item to_ascii()
+
+Returns ASCII value of decimal.
+
+=cut
+
+sub to_ascii
+{
+  my $num = shift;
+
+  return chr($num);
+}
+
 =item to_hex()
 
 Returns hex value of decimal.
@@ -163,6 +209,7 @@ sub check_for_address_change
   #if($main::address <> $main::address_SOL + $main::current_hexcode_line_buffer_byte ) {
   elsif($tmp_address != $tmp_address_SOL + $main::current_hexcode_line_buffer_byte - 1 ) {
     $main::current_hexcode_line_buffer_byte = $tmp_address - $tmp_address_SOL + 1;
+    $main::current_ascii_line_buffer_byte = $tmp_address - $tmp_address_SOL + 1 if $do_ascii;
   }
 }
 
@@ -198,7 +245,12 @@ sub do_the_print
   # Print previous line (if not totally blank)
   if (not $main::hexcode_line_buffer eq $template){
     blank_any_x();
-    print "$main::address_SOL: $main::hexcode_line_buffer\n";
+    if (not $do_ascii) {
+      print "$main::address_SOL: $main::hexcode_line_buffer\n";
+    } else {
+      print "$main::address_SOL: $main::hexcode_line_buffer  $main::ascii_line_buffer\n";
+      #print "$main::address_SOL: $main::hexcode_line_buffer  ".print_ascii_line()."\n";
+    }
   }
 }
 
@@ -229,6 +281,18 @@ sub reset_hexcode_output_buffer
   $main::current_hexcode_line_buffer_byte = 1;
 }
 
+=item reset_ascii_output_buffer()
+
+Reset both the hex line output buffer and current byte counter
+
+=cut
+
+sub reset_ascii_output_buffer
+{
+  $main::ascii_line_buffer = $main::ascii_template;
+  $main::current_ascii_line_buffer_byte = 1;
+}
+
 =item reset_the_line()
 
 Print and reset the hex line output buffer
@@ -240,9 +304,28 @@ sub reset_the_line
   do_the_print();
 
   # Reset the line
+  reset_the_line(0);
+}
+
+=item reset_the_line()
+
+A unified reset of the line buffers (ascii and hex). 
+
+Pass 1 to calculate start of line address.
+Pass 0 to use the address of the current assembler line.
+
+=cut
+
+sub reset_the_line
+{
+  my $do_calc = shift;
+  reset_ascii_output_buffer() if $do_ascii;     # Do in this order! -> #1
   reset_hexcode_output_buffer();   # Do in this order! -> #1
-  set_next_address_SOL();          # Do in this order! -> #2
-  #reset_hexcode_output_buffer();  # this resets any special byte pointer calcs.
+  if ($do_calc){
+    calc_next_address_SOL();         # Do in this order! -> #2
+  } else {
+    set_next_address_SOL();          # Do in this order! -> #2
+  }
 }
 
 =item set_next_address_SOL()
@@ -286,6 +369,9 @@ sub do_the_string_thing
     print "$main::hexcode_line_buffer   :::  $main::current_hexcode_line_buffer_byte  :: $main::array[$index] -> @main::array\n" if $main::debug;
     substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = $main::array[$index];
     $main::current_hexcode_line_buffer_byte = $main::current_hexcode_line_buffer_byte +1;
+
+    do_the_ascii_thing($main::array[$index]) if $do_ascii;
+
     check_over_8();
   }
 }
@@ -302,8 +388,8 @@ sub check_over_8
   if ($main::current_hexcode_line_buffer_byte > 8) {
     do_the_print();
 
-    reset_hexcode_output_buffer();   # Do in this order! -> #1
-    calc_next_address_SOL();         # Do in this order! -> #2
+    # Reset the line
+    reset_the_line(1);
   }
 }
 
