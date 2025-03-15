@@ -31,6 +31,7 @@ use strict;
 our $debug = 0;                             # Should be 0
 
 our $do_ascii = 1;                          # Enable additional ascii character dump
+our $do_caps = 1;                           # Enable upper case hex
 
 our $address_SOL = "0000";                  # Address of start of hex buffer line
                                             # Always a factor of 8 (8 byte boundary)
@@ -168,7 +169,11 @@ sub to_hex
 {
   my $num =shift;
 
-  return sprintf '%X', $num;
+  if ($do_caps) {
+    return sprintf '%02X', $num;
+  } else {
+    return sprintf '%02x', $num;
+  }
 
 }
 
@@ -304,10 +309,10 @@ sub reset_the_line
   do_the_print();
 
   # Reset the line
-  reset_the_line(0);
+  reset_the_lines(0);
 }
 
-=item reset_the_line()
+=item reset_the_lines()
 
 A unified reset of the line buffers (ascii and hex). 
 
@@ -316,7 +321,7 @@ Pass 0 to use the address of the current assembler line.
 
 =cut
 
-sub reset_the_line
+sub reset_the_lines
 {
   my $do_calc = shift;
   reset_ascii_output_buffer() if $do_ascii;     # Do in this order! -> #1
@@ -331,14 +336,19 @@ sub reset_the_line
 =item set_next_address_SOL()
 
 Set next start of line address, 
-Get from address stated on current line
+Get from address stated on current line.
+Work out the closest mod 8 line number.
+This is the exceptional way to update the start of line number,
+working from a broken sequence, 
+using the address of the start of the new sequence.
 
 =cut
 
 sub set_next_address_SOL
 {
   # Find the first factor of 8 below current address
-  my $first_factor_of_8 = $main::address;
+  # Convert to the global case being used
+  my $first_factor_of_8 = to_hex(hex($main::address));
 
   my $temp_first_factor_of_8 = hex($first_factor_of_8);
 
@@ -367,7 +377,11 @@ sub do_the_string_thing
 {
   for (my $index = 0; $index < $main::num_bytes; $index++) {
     print "$main::hexcode_line_buffer   :::  $main::current_hexcode_line_buffer_byte  :: $main::array[$index] -> @main::array\n" if $main::debug;
-    substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = $main::array[$index];
+
+    # Substitute the 2 digit hex number into the buffer,
+    # at the correct location.
+    # Convert to the global case being used
+    substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = to_hex(hex($main::array[$index]));
     $main::current_hexcode_line_buffer_byte = $main::current_hexcode_line_buffer_byte +1;
 
     do_the_ascii_thing($main::array[$index]) if $do_ascii;
@@ -389,13 +403,16 @@ sub check_over_8
     do_the_print();
 
     # Reset the line
-    reset_the_line(1);
+    reset_the_lines(1);
   }
 }
 
 =item calc_next_address_SOL()
 
 Calculate next start of line address, 
+by simply adding 8.
+This is the usual way to update the start of line number,
+for contiguous blocks of code.
 
 =cut
 
