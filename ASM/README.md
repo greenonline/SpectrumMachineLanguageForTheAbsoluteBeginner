@@ -45,4 +45,12 @@ to
 ```none
 our $do_ascii = 0;                          # Disable additional ascii character dump
 ```
+You can change the hex output to lower case by changing the line:
+```none
+our $do_caps = 1;                           # Enable upper case hex
+```
+to
+```none
+our $do_caps = 0;                           # Enable lower case hex
+```
 
