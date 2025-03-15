@@ -7,9 +7,9 @@
 6978          00160         org 27000                   ; start point decimal 27000
               00170 ;
 6978 F3       00180 start   di                          ; disable basic system effecting
-697A D9       00190         exx                         ; the keyboard scanning
-697B E5       00200         push    hl                  ; preserve the HL register pair
-697C D9       00210         exx                         ; pop back before return
+6979 D9       00190         exx                         ; the keyboard scanning
+697A E5       00200         push    hl                  ; preserve the HL register pair
+697B D9       00210         exx                         ; pop back before return
 697C CD836F   00220 again   call    init                ; initialisation
 697F CDBD70   00230 move    call    tfctrl              ; traffic control routine
 6982 CD5074   00240         call    respc               ; restore underneath
@@ -358,7 +358,9 @@
 6E5B 0000     01970         defw    0
 6E5D 0000     01980         defw    0
 6E5F 00       01990         db      0,0
+     00
 6E61 00       02000 ob6ext  db      0,0,0,0             ; ob6 pos real/abs flag
+     00 00 00
 6E65 0000     02010         defw    0
 6E67 0000     02020         defw    0
 6E69 0000     02030         defw    0
@@ -370,9 +372,9 @@
 6E6E 00       02080 pcarcyc defb    0
 6E6F 00       02090 pcardir defb    0
 6E70 00       02100 pcarrap defb    0
-6371 0000     02110 pcarpos defw    0
-6373 0000     02120 pcarshp defw    0
-6375 0000     02130 pcaratt defw    0
+6E71 0000     02110 pcarpos defw    0
+6E73 0000     02120 pcarshp defw    0
+6E75 0000     02130 pcaratt defw    0
 6E77 02       02140 pcarrow defb    2
 6E78 06       02150 pcarcol defb    6    
               02160 ;
@@ -380,9 +382,9 @@
 6E79 00       02180 frgext  defb    0                   ; frog database
 6E7A 00       02190 frgcyc  defb    0  
 6E7B 00       02200 frgdir  defb    0                   ; 0:up 1:rht 2:down 3:left                        
-637C 0000     02210 frgpos  defw    0
-637E 0000     02220 frogsh  defw    0
-6380 00       02230 frgatr  defb    0
+6E7C 0000     02210 frgpos  defw    0
+6E7E 0000     02220 frogsh  defw    0
+6E80 00       02230 frgatr  defb    0
               02240 ;
               02250 ;    
 6E81 08       02260 frgdb   db      8,8,1
@@ -433,11 +435,12 @@
 6EBF C76A     02630         defw    lcar               
 6EC1 276B     02640         defw    lcatt               
 6EC3 02       02650         db      2,6
+     06
               02660 ;    
               02670 ;    
 6EC5 06       02680 rtdb    db      6,1,0,0   
      01 00 00          
-6EC5 1848     02690         defw    $4818              
+6EC9 1848     02690         defw    $4818              
 6ECB 926C     02700         defw    rtruck               
 6ECD 6A6D     02710         defw    rtatt               
 6ECF 03       02720         db      3,9
@@ -518,7 +521,7 @@
 6F43 30       00670 score   db      $30,$30,$30,$30,$30,$30
      30 30 30 30 30
 6F49 48       00680 scrms2  defm    "HIGH SCORES"
-     49 47 48 20 53 4F 52
+     49 47 48 20 53 43 4F 52
      45 20
 6F54 30       00690 hiscr   db      $30,$30,$30,$30,$30 
      30 30 30 30   
@@ -539,9 +542,9 @@
               00840 ;
               00850 ;
 6F6A 0000     00860 attptr  defw    0                   
-6F6A 0000     00870 newpos  defw    0                   ; new traffic object position
-6F6A 0000     00880 posptr  defw    0                   ; traffic position database ptr
-6F6A 00       00890 genflg  defb    0                   ; traffic regneration flag
+6F6C 0000     00870 newpos  defw    0                   ; new traffic object position
+6F6E 0000     00880 posptr  defw    0                   ; traffic position database ptr
+6F70 00       00890 genflg  defb    0                   ; traffic regneration flag
               00900 ;
               00910 ;
 6F71 00       00920 jamflg  defb    0                   ; set to 1 as traffic move jam
@@ -573,7 +576,7 @@
 3C00          01180 chrset  equ $3c00
               01190 ;
               01200 ;
-6F82          01210 numfrg  defb    5                   ; number of frog
+6F82 05       01210 numfrg  defb    5                   ; number of frog
               01220 ;
               01230 ;
 6F83 AF       01240 init    xor     a                   ; 000 for d2 d2 d0
@@ -1237,13 +1240,13 @@
 733E 13       07810         inc     de
 733F 24       07820         inc     h
 7340 10FA     07830         djnz    charlp
-7242 E1       07840         pop     hl
-7243 D1       07850         pop     de
-7244 23       07860         inc     hl                  ; pos ptr
-7245 13       07870         inc     de                  ; message prt
-7246 C1       07880         pop     bc
-7247 10DF     07890         djnz    disasc
-7249 C9       07900         ret
+7342 E1       07840         pop     hl
+7343 D1       07850         pop     de
+7344 23       07860         inc     hl                  ; pos ptr
+7345 13       07870         inc     de                  ; message prt
+7346 C1       07880         pop     bc
+7347 10DF     07890         djnz    disasc
+7349 C9       07900         ret
               07910 ;
               07920 ;    
 734A D9       07930 police  exx
@@ -1262,7 +1265,7 @@
 735F 32726F   08060         ld      (chase),a
 7362 21F56E   08070         ld      hl,rpcdb            ; right pc
 7365 CDCC77   08080         call    randno
-7368 EG01     08090         and     1
+7368 E601     08090         and     1
 736A 2803     08100         jr      z,rhtpc
 736C 21DD6E   08110         ld      hl,lpcdb
 736F 010C00   08120 rhtpc   ld      bc,12
