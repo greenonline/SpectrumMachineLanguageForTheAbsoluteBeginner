@@ -25,26 +25,34 @@ use strict;
 # ### End of use
 
 # ### Start of globals
-use constant DEBUG => 0;                    # Should be 0
-use constant DO_ASCII => 1;                 # Enable additional ascii character dump
-use constant DO_CAPS => 1;                  # Enable upper case hex
-use constant MOD_8 => 0;                    # Find nearest lowest mod 8 address
-use constant ADD_8 => 1;                    # Increment address by 8
+
+use constant {
+    DEBUG => 0,                             # Should be 0
+
+    DO_ASCII => 1,                          # Enable additional ascii character dump
+    DO_CAPS => 1,                           # Enable upper case hex
+    DO_ADDRESS => 1,                        # Enable upper case hex for addresses
+    DO_CODE => 1,                           # Enable upper case hex for code
+    MOD_8 => 0,                             # Find nearest lowest mod 8 address
+    ADD_8 => 1,                             # Increment address by 8
+
+    HEX_TEMPLATE => "xx xx xx xx xx xx xx xx", 
+                                            # Boilerplate of the output
+    ASCII_TEMPLATE => "........",           # Boilerplate of the ascii output
+};
 
 our $address_SOL = "0000";                  # Address of start of hex buffer line
                                             # Always a factor of 8 (8 byte boundary)
-our $template = "xx xx xx xx xx xx xx xx";  # Template of the boilerplate of the output
-our $ascii_template = "........";           # Template of the boilerplate of the ascii output
-our $hexcode_line_buffer = $template;       # The boilerplate of the output
+our $hexcode_line_buffer = HEX_TEMPLATE;    # The boilerplate of the output
                                             # Insert hex over the xx
 our $current_hexcode_line_buffer_byte = 1;  # Pointer to which byte in the buffer
                                             # From 1-8
 our $address;                               # Address of current line read
 our $hexcode_to_parse;                      # Hexcode of current line read
-our $num_bytes;                             # Number of bytes of Hexcode in current line read
+our $num_bytes;                             # # of bytes of hexcode in current line read
 our @array;                                 # Will hold hex bytes of current line read
-our $ascii_line_buffer = $ascii_template;       # The boilerplate of the output
-our $current_ascii_line_buffer_byte = 1;  # Pointer to which byte in the buffer
+our $ascii_line_buffer = ASCII_TEMPLATE;    # The boilerplate of the output
+our $current_ascii_line_buffer_byte = 1;    # Pointer to which byte in the buffer
 
 # ### End of globals
 
@@ -54,8 +62,6 @@ while(my $line = <>) {
 
   chomp $line;
 
-  #if (/(?:^|\s)([0-9a-fA-F]{2}(?:\s|$))+/) {          # this only for <>
-  #if ($line =~ /(?:^|\s)([0-9a-fA-F]{2}(?:\s|$))+/) { # picks every line!
   if ($line =~ /^\s*([0-9a-fA-F]{2}(?:\s|$))+/) {
 
     # Get the standard hex listing with address and hexcode 
@@ -80,6 +86,7 @@ while(my $line = <>) {
 
     # Does line have 4 and then 2-8 digits?
     if ($line =~ /^([0-9a-fA-F]{4})\s{1}([0-9a-fA-F]{2,8})\s+/) {  
+
       # Checked for the standard hex listing format with address and hexcode 
 
       $address = $1;
@@ -90,11 +97,14 @@ while(my $line = <>) {
       $hexcode_to_parse = $this_line_of_hexcode;
 
       parse_the_hex();
-      print  "Address: $address     Hex: $this_line_of_hexcode   # bytes: $num_bytes\n" if DEBUG;
-      for(my $i = 0; $i < $num_bytes; ++$i) {
-        print $array[$i]." " if DEBUG;
+
+      if (DEBUG) {
+        print  "Addr: $address  Hex: $this_line_of_hexcode  # bytes: $num_bytes\n";
+        for(my $i = 0; $i < $num_bytes; ++$i) {
+          print $array[$i]." ";
+        }
+        print "\n";
       }
-      print "\n" if DEBUG;
 
       # Is address divisible by 8?
       # If so, assign to address_SOL and flag to print
@@ -109,6 +119,8 @@ while(my $line = <>) {
   }
 }
 do_the_print();
+
+exit 0;
 
 # ### End of main!
 
@@ -172,7 +184,40 @@ sub to_hex
   } else {
     return sprintf '%02x', $num;
   }
+}
 
+=item address_to_hex()
+
+Returns hex value of decimal.
+
+=cut
+
+sub address_to_hex
+{
+  my $num =shift;
+
+  if (DO_CAPS and DO_ADDRESS) {
+    return sprintf '%02X', $num;
+  } else {
+    return sprintf '%02x', $num;
+  }
+}
+
+=item code_to_hex()
+
+Returns hex value of decimal.
+
+=cut
+
+sub code_to_hex
+{
+  my $num =shift;
+
+  if (DO_CAPS and DO_CODE) {
+    return sprintf '%02X', $num;
+  } else {
+    return sprintf '%02x', $num;
+  }
 }
 
 =item check_for_address_change_simple()
@@ -246,7 +291,7 @@ Print the start of line address and the hex line output buffer
 sub do_the_print
 {
   # Print previous line (if not totally blank)
-  if (not $main::hexcode_line_buffer eq $template){
+  if (not $main::hexcode_line_buffer eq HEX_TEMPLATE){
     blank_any_x();
     if (not DO_ASCII) {
       print "$main::address_SOL: $main::hexcode_line_buffer\n";
@@ -280,7 +325,7 @@ Reset both the hex line output buffer and current byte counter
 
 sub reset_hexcode_output_buffer
 {
-  $main::hexcode_line_buffer = $template;
+  $main::hexcode_line_buffer = HEX_TEMPLATE;
   $main::current_hexcode_line_buffer_byte = 1;
 }
 
@@ -292,7 +337,7 @@ Reset both the hex line output buffer and current byte counter
 
 sub reset_ascii_output_buffer
 {
-  $main::ascii_line_buffer = $main::ascii_template;
+  $main::ascii_line_buffer = ASCII_TEMPLATE;
   $main::current_ascii_line_buffer_byte = 1;
 }
 
@@ -334,13 +379,15 @@ sub set_next_address_SOL
 {
   # Find the first factor of 8 below current address
   # Convert to the global case being used
-  my $first_factor_of_8 = to_hex(hex($main::address));
+  #my $first_factor_of_8 = to_hex(hex($main::address));
+  my $first_factor_of_8 = address_to_hex(hex($main::address));
 
   my $temp_first_factor_of_8 = hex($first_factor_of_8);
 
   while (not is_mod_8($temp_first_factor_of_8)) {
     $temp_first_factor_of_8--;
-    $first_factor_of_8 = to_hex($temp_first_factor_of_8);
+    #$first_factor_of_8 = to_hex($temp_first_factor_of_8);
+    $first_factor_of_8 = address_to_hex($temp_first_factor_of_8);
   }
 
   $main::address_SOL = $first_factor_of_8;
@@ -367,7 +414,8 @@ sub do_the_string_thing
     # Substitute the 2 digit hex number into the buffer,
     # at the correct location.
     # Convert to the global case being used
-    substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = to_hex(hex($main::array[$index]));
+    #substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = to_hex(hex($main::array[$index]));
+    substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = code_to_hex(hex($main::array[$index]));
     $main::current_hexcode_line_buffer_byte = $main::current_hexcode_line_buffer_byte +1;
 
     do_the_ascii_thing($main::array[$index]) if DO_ASCII;
@@ -405,7 +453,8 @@ for contiguous blocks of code.
 sub calc_next_address_SOL
 {
   my $next_address = hex($main::address_SOL) + 8;
-  $main::address_SOL = to_hex($next_address);
+  #$main::address_SOL = to_hex($next_address);
+  $main::address_SOL = address_to_hex($next_address);
 }
 
 =item address_div_8()
