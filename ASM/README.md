@@ -65,4 +65,27 @@ This last modification may *seem* pointless, but trust me it isn't. It can allev
     DO_ADDRESS => 0,                        # Disable upper case hex for addresses, i.e. lower case.
     DO_CODE => 1,                           # Enable upper case hex for code (only).
 ```
+
+You can also configure: blanking of empty memory locations; whether spaces seperate the hex bytes; debug, show addresses/code/ASCII.
+
+These are also configurable via command line options/switches ('abcdhlmsuvwx') - however, to do so, all of the default constants need to be set to zero.
+
+The options are: 
+
+```none
+   -a               show ASCII table
+   -b               blank empty memory locations
+   -c               show hex dump
+   -d               debug mode
+   -h               brief help message
+   -l               show addresses
+   -m               full documentation
+   -s               add spaces between hex bytes of code
+   -u               global uppercase
+   -v               display version
+   -w               uppercase addresses
+   -x               uppercase code
+```
+
+
 ###### That's all folks!
