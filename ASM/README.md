@@ -39,18 +39,30 @@ cat freeway_frog_full.asm | perl hexextractor.pl
 ```
 You can turn off the ASCII table generated on the right hand side by changing the line:
 ```none
-use constant DO_ASCII => 1;                 # Enable additional ascii character dump
+    DO_ASCII => 1,                          # Enable additional ascii character dump
 ```
 to
 ```none
-use constant DO_ASCII => 0;                 # Disable additional ascii character dump
+    DO_ASCII => 0;                          # Disable additional ascii character dump
 ```
 You can change the hex output to lower case by changing the line:
 ```none
-use constant DO_CAPS => 1;                  # Enable upper case hex
+    DO_CAPS => 1;                  # Enable upper case hex
 ```
 to
 ```none
-use constant DO_CAPS => 0;                  # Enable lower case hex
+    DO_CAPS => 0;                  # Enable lower case hex
 ```
-
+You can even configure both the addresses and the code differently, to be in either lower or upper case, by changing the following two lines:
+```none
+    DO_ADDRESS => 1,                        # Enable upper case hex for addresses
+    DO_CODE => 1,                           # Enable upper case hex for code
+```
+This last modification may *seem* pointless, but trust me it isn't. It can alleviate the monotony of pure upper case characters. I recommend the following setting:
+```none
+    DO_ASCII => 1,                          # Enable additional ascii character dump
+    DO_CAPS => 1;                           # Enable upper case hex
+    DO_ADDRESS => 0,                        # Disable upper case hex for addresses, i.e. lower case.
+    DO_CODE => 1,                           # Enable upper case hex for code (only).
+```
+###### That's all folks!
