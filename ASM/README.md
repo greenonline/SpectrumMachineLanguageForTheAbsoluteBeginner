@@ -39,18 +39,18 @@ cat freeway_frog_full.asm | perl hexextractor.pl
 ```
 You can turn off the ASCII table generated on the right hand side by changing the line:
 ```none
-our $do_ascii = 1;                          # Enable additional ascii character dump
+use constant DO_ASCII => 1;                 # Enable additional ascii character dump
 ```
 to
 ```none
-our $do_ascii = 0;                          # Disable additional ascii character dump
+use constant DO_ASCII => 0;                 # Disable additional ascii character dump
 ```
 You can change the hex output to lower case by changing the line:
 ```none
-our $do_caps = 1;                           # Enable upper case hex
+use constant DO_CAPS => 1;                  # Enable upper case hex
 ```
 to
 ```none
-our $do_caps = 0;                           # Enable lower case hex
+use constant DO_CAPS => 0;                  # Enable lower case hex
 ```
 
