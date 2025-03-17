@@ -11,7 +11,9 @@
  - help_mess() and version_mess() for getopts
  - sub blah($$)
  - &blah (\@hexcode);
- - current hex and ascii pointers will always have the same value!!!
+ - current hex and ascii pointers will always have the same value!!! Unify them!!
+ - specify (optionally) input file name on command line
+ - specify (optionally) output file name on command line
 
 
 =head1 NAME
@@ -62,6 +64,10 @@ Note: Set to zero to enable command line parameters.
 =over
 
 =item DEBUG
+
+Should be 0.
+
+=item VERBOSE
 
 Should be 0.
 
@@ -121,6 +127,7 @@ Boilerplate of the ASCII output.
 
 use constant {
     DEBUG => 0,                             # Should be 0
+    VERBOSE => 0,                           # Should be 0
     DO_ASCII_SHOW => 0,                     # Enable additional ascii character dump
     DO_CAPS => 0,                           # Enable upper case hex
     DO_ADDRESS_CAPS => 0,                   # Enable upper case hex for addresses
@@ -157,13 +164,21 @@ our $opt_b;
 our $opt_c;
 our $opt_d;
 our $opt_h;
+our $opt_i;
 our $opt_l;
 our $opt_m;
+our $opt_o;
 our $opt_s;
 our $opt_u;
 our $opt_v;
 our $opt_w;
 our $opt_x;
+
+our $infile  = "in.asm";                    # freeway_frog_full.asm
+our $outfile = "out.hex";                   # freeway_frog_full.hex
+
+our $fhi;                                   # in file handle
+our $fho;                                   # out file handle
 
 ##################################################################
 #
@@ -177,6 +192,11 @@ our $opt_x;
 #
 ##################################################################
 
+##################################################################
+#
+# ### Get Opt Long
+#
+##################################################################
 
 my $man = 0;
 my $help = 0;
@@ -185,9 +205,10 @@ my $help = 0;
 pod2usage(1) if $help;
 pod2usage(-exitval => 0, -verbose => 2) if $man;
 
-# From https://stackoverflow.com/q/35508007/4424636 - start
 
 =pod
+
+# From https://stackoverflow.com/q/35508007/4424636 - start
 
 my %opt = ();
 
@@ -202,15 +223,36 @@ GetOptions(
 
 _validate_inputs(%opt);
 
+# From https://stackoverflow.com/q/35508007/4424636 - end
+
+
+# or from https://stackoverflow.com/a/11422904/4424636
+my ($input, $output);
+GetOptions('input=s' => \$input,'output=s' => \$output) or die;
+
+open my $fh, '<', $input or die;
+
+while ( <$fh> ) { 
+    ## Process file.
+}
+
+
 =cut
 
-# From https://stackoverflow.com/q/35508007/4424636 - end
+#=pod
+
+##################################################################
+#
+# ### Get Opt Short
+#
+##################################################################
+
 
 # From docs - short
 
 $Getopt::Std::STANDARD_HELP_VERSION = true;
-getopts('abcdhlmsuvwx');  # Options as above
-#getopts('abcdhlmsuvwx', \my %opts);  # Options as above, values in %opts
+getopts('abcdhi:lmo:suvwx');  # Options as above
+#getopts('abcdhi:lmo:suvwx', \my %opts);  # Options as above, values in %opts
 pod2usage(1) if $help;
 pod2usage(-exitval => 0, -verbose => 2) if $man;
 
@@ -219,9 +261,113 @@ if ($opt_h) {
   exit(0);
 }
 if ($opt_v) {
-  version_mess();
-  exit(0);
+  #version_mess();
+  #exit(0);
 }
+
+if ($opt_i or $ARGV[0]) {
+  if ($opt_i) {
+    print "i=$opt_i\n" if DEBUG or $opt_d;
+    print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    $infile = $opt_i;
+  } else {
+    print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    $infile = $ARGV[0];
+  }
+  open $fhi, '<', $infile or die $!;
+
+} else {
+  # Just use STDIN
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fhi = \*STDIN;
+  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+}
+
+=pod
+
+if ($opt_i) {
+  print "i=$opt_i\n" if DEBUG or $opt_d;
+  print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+  $infile = $opt_i;
+
+  open $fhi, '<', $infile or die $!;
+
+} else {
+  # Just use STDIN
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fhi = \*STDIN;
+  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+}
+
+=cut
+
+if ($opt_o or $ARGV[1]) {
+  if ($opt_o) {
+    print "o=$opt_o\n" if DEBUG or $opt_d;
+    print "Filename to write: $opt_o\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    $outfile = $opt_o;
+  } else {
+    print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    $outfile = $ARGV[1];
+  }
+  open $fho, '>', $outfile or die $!;
+
+} else {
+  # Just use STDOUT
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fho = \*STDOUT;
+  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+}
+
+=pod
+
+if ($opt_o) {
+  print "o=$opt_o\n" if DEBUG or $opt_d;
+  print "Filename to write: $opt_o\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+  $outfile = $opt_o;
+
+  open $fho, '>', $outfile or die $!;
+
+} else {
+  # Just use STDOUT
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fho = \*STDOUT;
+  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+}
+
+=cut
+
+#=cut
+
+=pod
+
+if ($ARGV[0]) {
+  print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+  $infile = $ARGV[0];
+
+  open $fhi, '<', $infile or die $!;
+
+} else {
+  # Just use STDIN
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fhi = \*STDIN;
+  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+}
+
+if ($ARGV[1]) {
+  print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+  $outfile = $ARGV[1];
+
+  open $fho, '>', $outfile or die $!;
+
+} else {
+  # Just use STDOUT
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fho = \*STDOUT;
+  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+}
+
+=cut
 
 ##################################################################
 #
@@ -237,7 +383,7 @@ if ($opt_v) {
 ##################################################################
 
 
-while(my $line = <>) {
+while(my $line = <$fhi>) {
 
   chomp $line;
 
@@ -307,6 +453,13 @@ while(my $line = <>) {
 }
 
 do_the_print($hexcode_line_buffer, $address_SOL, $ascii_line_buffer);
+
+if ($ARGV[0] or $opt_i) {
+  close $fhi or die $!;
+}
+if ($ARGV[1] or $opt_o) {
+  close $fho or die $!;
+}
 
 exit 0;
 
@@ -512,18 +665,18 @@ sub do_the_print
     # Pad end of line with spaces - field width 23 (8 x 2 = 16 + 7 spaces)
     $hexcode_line_buf = sprintf '%-23s', $hexcode_line_buf if not (DO_SPACES or $opt_s);
     if (DO_ADDRESS_SHOW or $opt_l) {
-      print "$addr_SOL: ";
+      print $main::fho "$addr_SOL: ";
     } 
     if (DO_CODE_SHOW or $opt_c) {
-      print "$hexcode_line_buf";
+      print $main::fho "$hexcode_line_buf";
     } 
     if (DO_ASCII_SHOW or $opt_a) {
-      print "  $ascii_line_buf";
+      print $main::fho "  $ascii_line_buf";
       #print print_ascii_line();
     }
     # If we have printed anything, then new line - else don't bother filling the screen
     if (DO_ADDRESS_SHOW or $opt_l or DO_CODE_SHOW or $opt_c or DO_ASCII_SHOW or $opt_a) {
-      print "\n";
+      print $main::fho "\n";
     }
   }
 }
@@ -848,7 +1001,7 @@ hexextrator - Extract a hex dump from assembly listing
 
 =head1 SYNOPSIS
 
-hexextrator [abcdhlmsuvwx] [file ...]
+hexextrator [abcdhi:lmo:suvwx] [file ...]
 
  Options:
    -a               show ASCII table
@@ -856,8 +1009,10 @@ hexextrator [abcdhlmsuvwx] [file ...]
    -c               show hex dump
    -d               debug mode
    -h               brief help message
+   -i               input file
    -l               show addresses
    -m               full documentation
+   -o               output file
    -s               add spaces between hex bytes of code
    -u               global uppercase
    -v               display version
@@ -889,6 +1044,10 @@ Set debug mode.
 
 Print a brief help message and exits.
 
+=item B<-i>
+
+Specify input file.
+
 =item B<-l>
 
 Show addresses.
@@ -896,6 +1055,10 @@ Show addresses.
 =item B<-m>
 
 Prints the manual page and exits.
+
+=item B<-o>
+
+Specify output file.
 
 =item B<-s>
 
