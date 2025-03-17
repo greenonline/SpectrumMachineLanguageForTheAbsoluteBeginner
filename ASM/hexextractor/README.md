@@ -5,10 +5,12 @@ Here is a handy Perl script, [`hexextractor.pl`](https://github.com/greenonline/
 Run using 
 
 ```none
-cat freeway_frog_full.asm | perl hexextractor.pl
+cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs
 ```
 
-[hex dump](https://github.com/greenonline/SpectrumMachineLanguageForTheAbsoluteBeginner/blob/main/ASM/freeway_frog.hex) sample:
+Don't be surprised, when you run the script, if nothing is output. It is probably because you haven't told `hexextractor` to do anything yet! Pass the command line arguments `abclsu`, to turn on the full output.
+
+Here is a [hex dump](https://github.com/greenonline/SpectrumMachineLanguageForTheAbsoluteBeginner/blob/main/ASM/freeway_frog.hex) sample:
 
 ```none
 6978: F3 D9 E5 D9 CD 83 6F CD  ......o.
@@ -24,6 +26,32 @@ cat freeway_frog_full.asm | perl hexextractor.pl
 7810: 21 00 58 11 01 58 01 FF  !.X..X..
 7818: 02 36 38 ED B0 C9        .68.....
 ```
+
+## Command line options
+
+These are also configurable via command line options/switches (`'abcdhlmsuvwx'`) - however, to do so, all of the default constants (see below) need to be set to zero.
+
+The options are: 
+
+```none
+   -a               show ASCII table
+   -b               blank empty memory locations
+   -c               show hex dump
+   -d               debug mode
+   -h               brief help message
+   -l               show addresses
+   -m               full documentation
+   -s               add spaces between hex bytes of code<sup>1</sup>
+   -u               global uppercase
+   -v               display version
+   -w               uppercase addresses
+   -x               uppercase code
+```
+
+## Permanent options
+
+These might be more useful if you do not wish to repeatedly use the comand line options.
+
 You can turn off the ASCII table generated on the right hand side by changing the line:
 ```none
     DO_ASCII => 1,                          # Enable additional ascii character dump
@@ -55,26 +83,8 @@ This last modification may *seem* pointless, but trust me it isn't. It can allev
 
 You can also configure: blanking of empty memory locations; whether spaces seperate the hex bytes<sup>1</sup>; debug, show addresses/code/ASCII.
 
-These are also configurable via command line options/switches (`'abcdhlmsuvwx'`) - however, to do so, all of the default constants need to be set to zero.
 
-The options are: 
-
-```none
-   -a               show ASCII table
-   -b               blank empty memory locations
-   -c               show hex dump
-   -d               debug mode
-   -h               brief help message
-   -l               show addresses
-   -m               full documentation
-   -s               add spaces between hex bytes of code<sup>1</sup>
-   -u               global uppercase
-   -v               display version
-   -w               uppercase addresses
-   -x               uppercase code
-```
-
-### Notes
+### Footnotes
 
 <sup>1</sup> If `-s` is not used, and spaces between the bytes are suppressed, then, in certain circumstances, some bytes of *non_contiguous code* can lose their "location" and appear to be assigned to an incorrect address - if they are preceded by empty memory locations *AND* the blanking option is turned on. For this reason always use the `-s` option for correct byte alignment, visually.
 
