@@ -4,17 +4,15 @@
 
  - getopts - long
  - reduce number of globals
+   - check for no globals: search for "main::" - there should be no occurences
  - usage from getopts
- - Check for no globals: search for "main::" - there should be no occurences
- - do_the_ascii_thing() should be called from main() (similar to over_8()), and not from within do_the_string_thing()
- - check_over_8() whether should be called from main(), as should do_the_ascii_thing()
+ - do_the_ascii_thing() should be called from main() 
+   - similar to over_8(), and not from within do_the_string_thing()
+ - check_over_8() should be called from main(), as should do_the_ascii_thing()
  - help_mess() and version_mess() for getopts
  - sub blah($$)
  - &blah (\@hexcode);
  - current hex and ascii pointers will always have the same value!!! Unify them!!
- - specify (optionally) input file name on command line
- - specify (optionally) output file name on command line
-
 
 =head1 NAME
 
@@ -23,6 +21,10 @@ Hexextractor - Extract a hex dump from assembler listing
 =head1 SYNOPSIS
 
     cat freeway_frog_full.asm | perl hexextractor.pl -abcls
+    perl hexextractor.pl -alcxwbsv -i freeway_frog_full.asm -o freeway_frog_full.hex
+    perl hexextractor.pl -alcxwbsv freeway_frog_full.asm freeway_frog_full.hex
+    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs -o freeway_frog_full.hex
+    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs freeway_frog_full.hex
 
 =head1 DESCRIPTION
 
