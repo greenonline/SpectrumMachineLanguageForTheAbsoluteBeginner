@@ -2,52 +2,17 @@
 
 =head1 TODO
 
- - getopts
+ - getopts - long
  - reduce number of globals
-    - changes in do_the_string_thing() have broken indexing???  Check earlier changes in check_over_8() as well.
-    - check any main::variables that are changed in the functions
-      - I had previously held off changing any passed variables, maybe an edit caused one passed value to be changed. I'm sure I've seen a few in do_the_string_thing()
-    - go back until it works (prior to the check_over_8() change?
-    - note the $main::hexcode_line_buf in check_over_8() - should be $hexcode_line_buf - but broken before that?
-    - which index and which string are broken?
-      - presumably ascii_buffer_byte pointer (and ascii_buffer???)
  - usage from getopts
  - Check for no globals: search for "main::" - there should be no occurences
- - The last elsif seems inverted in check_for_address_change(), surely we increment pointer if == not !=.  If != then we call reset_the_line(). Plus the increment (++) of pointer if contiguous, i.e. in final else..
-   - However, the code worked (look at the "spaces in middle of line" fix, so why does this look wrong?
- - Is the hex pointer incremented when the ascii pointer is not? In do_the_string_thing(), after the call to do_ascii_thing() - no, it is incrememted in do_the_ascii_thing()
- - do_the_ascii_thing() should do the increment of the ascii pointer, just as do_the_string_thing() increments the string pointer - it does already!!!!
  - do_the_ascii_thing() should be called from main() (similar to over_8()), and not from within do_the_string_thing()
- - check_over_8() should be called from main(), as should do_the_ascii_thing()
+ - check_over_8() whether should be called from main(), as should do_the_ascii_thing()
  - help_mess() and version_mess() for getopts
  - sub blah($$)
  - &blah (\@hexcode);
  - current hex and ascii pointers will always have the same value!!!
 
-## Keep your eyes on
-
-1. In check_for_address_change():
-
-Was
-
-  elsif($tmp_address != $tmp_address_SOL + $main::current_hexcode_line_buffer_byte - 1 ) {
-    $main::current_hexcode_line_buffer_byte++;
-    $main::current_ascii_line_buffer_byte++ if DO_ASCII_SHOW or $opt_a;
-  }
-
-Now
-
-  elsif($tmp_address != $tmp_address_SOL + $main::current_hexcode_line_buffer_byte - 1 ) {
-    reset_the_line(MOD_8);
-  } else {
-    # This should be in an else?
-    $main::current_hexcode_line_buffer_byte++;
-    $main::current_ascii_line_buffer_byte++ if DO_ASCII_SHOW or $opt_a;
-  }
-
-2. `substr` in do_the_string_thing()
-
-3. Why was the subscripterror in do_the_ascii_thing() and now in do_the_string_thing()
 
 =head1 NAME
 
