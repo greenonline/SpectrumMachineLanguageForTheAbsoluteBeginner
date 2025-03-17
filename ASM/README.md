@@ -66,9 +66,9 @@ This last modification may *seem* pointless, but trust me it isn't. It can allev
     DO_CODE => 1,                           # Enable upper case hex for code (only).
 ```
 
-You can also configure: blanking of empty memory locations; whether spaces seperate the hex bytes; debug, show addresses/code/ASCII.
+You can also configure: blanking of empty memory locations; whether spaces seperate the hex bytes<sup>1</sup>; debug, show addresses/code/ASCII.
 
-These are also configurable via command line options/switches ('abcdhlmsuvwx') - however, to do so, all of the default constants need to be set to zero.
+These are also configurable via command line options/switches (`'abcdhlmsuvwx'`) - however, to do so, all of the default constants need to be set to zero.
 
 The options are: 
 
@@ -80,12 +80,17 @@ The options are:
    -h               brief help message
    -l               show addresses
    -m               full documentation
-   -s               add spaces between hex bytes of code
+   -s               add spaces between hex bytes of code<sup>1</sup>
    -u               global uppercase
    -v               display version
    -w               uppercase addresses
    -x               uppercase code
 ```
 
+### Notes
+
+<sup>1</sup> If `-s` is not used, and spaces between the bytes are suppressed, then, in certain circumstances, some bytes of *non_contiguous code* can lose their "location" and appear to be assigned to an incorrect address - if they are preceded by empty memory locations *AND* the blanking option is turned on. For this reason always use the `-s` option for correct byte alignment, visually.
+
+For completely contiguous blocks of code, or if the blanking option is not applied, then the `-s` option can be safely not used.
 
 ###### That's all folks!
