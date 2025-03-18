@@ -1,6 +1,24 @@
 # Hexextractor
 
-Here is a handy Perl script, [`hexextractor.pl`](https://github.com/greenonline/SpectrumMachineLanguageForTheAbsoluteBeginner/blob/main/ASM/hexextractor.pl) that takes the `.asm` file via STDIN and produces a [hex dump](https://github.com/greenonline/SpectrumMachineLanguageForTheAbsoluteBeginner/blob/main/ASM/freeway_frog.hex) on STDOUT.
+Here is a handy Perl script, [`hexextractor.pl`](https://github.com/greenonline/SpectrumMachineLanguageForTheAbsoluteBeginner/blob/main/ASM/hexextractor.pl) that takes the `.asm` file via STDIN and produces a [hex dump](https://github.com/greenonline/SpectrumMachineLanguageForTheAbsoluteBeginner/blob/main/ASM/freeway_frog.hex) on STDOUT. As any good Perl script should, it contains complete and detailed POD documentation.
+
+Written specifically for the full assembler/assembly listing of Freeway Frog (i.e. Frogger) from the book, Spectrum Machine Language for the Absolute Beginner, by William Tang (1982).
+
+---
+
+However, you *could* use this script on any assembly listing that *strictly* follows the two same formats as the freeway frog assembly listing.
+
+Format #1:
+
+    aaaa xxxxxxxx ddddd lllllll iiiiiii iiiiiiiiiiiiiiiiiii ;ccccccccc... 
+      4 s  8     s   5 s    7  s   7   s         1         s;
+
+Format #2:
+
+    xx[ xx[ xx[ xx[ xx[ xx[ xx[ xx]]]]]]] 
+     2 s 2 s 2 s 2 s 2 s 2 s 2 s 2
+
+---
 
 Run using 
 
