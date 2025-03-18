@@ -2,17 +2,13 @@
 
 =head1 TODO
 
- - getopts - long
  - reduce number of globals
    - check for no globals: search for "main::" - there should be no occurences
  - usage from getopts
  - do_the_ascii_thing() should be called from main() 
    - similar to over_8(), and not from within do_the_string_thing()
  - check_over_8() should be called from main(), as should do_the_ascii_thing()
- - help_mess() and version_mess() for getopts
- - sub blah($$)
  - &blah (\@hexcode);
- - current hex and ascii pointers will always have the same value!!! Unify them!!
 
 =head1 NAME
 
@@ -21,10 +17,13 @@ Hexextractor - Extract a hex dump from assembler listing
 =head1 SYNOPSIS
 
     cat freeway_frog_full.asm | perl hexextractor.pl -abcls
-    perl hexextractor.pl -alcxwbsv -i freeway_frog_full.asm -o freeway_frog_full.hex
-    perl hexextractor.pl -alcxwbsv freeway_frog_full.asm freeway_frog_full.hex
-    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs -o freeway_frog_full.hex
-    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs freeway_frog_full.hex
+    perl hexextractor.pl -alcxwbsv -i in.asm -o out.hex
+    perl hexextractor.pl -alcxwbsv freeway_frog_full.asm freeway_frog.hex
+    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs -o frogger.hex
+    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs fraggle.hex
+
+    perl hexextractor.pl -h
+    perl hexextractor.pl -v
 
 =head1 DESCRIPTION
 
@@ -43,8 +42,8 @@ Written specifically for the full assembler/assembly listing of Freeway Frog (i.
 use warnings;
 use strict;
 
-use Getopt::Std;
-#use Getopt::Long;
+#use Getopt::Std;
+use Getopt::Long;
 use Pod::Usage;
 
 ##################################################################
@@ -55,7 +54,42 @@ use Pod::Usage;
 
 ##################################################################
 #
-# ### Start of globals
+# ### Start of prototypes
+#
+##################################################################
+
+sub print_ascii_line ();
+sub do_the_ascii_thing ($);
+sub to_ascii ($);
+sub to_hex ($);
+sub address_to_hex ($);
+sub code_to_hex ($);
+sub check_for_address_change ($$);
+sub blank_any_x();
+sub do_the_print ($$$);
+sub parse_the_hex ($);
+#sub reset_hexcode_output_buffer ();
+#sub reset_ascii_output_buffer ();
+sub reset_output_buffers ();
+sub reset_the_line ($);
+sub set_next_address_SOL ($);
+sub do_the_string_thing ($$$$$);
+sub check_over_8 ($$$$);
+sub calc_next_address_SOL ();
+sub address_div_8 ($);
+sub is_mod_8 ($);
+sub help_mess ();
+sub version_mess ();
+
+##################################################################
+#
+# ### End of prototypes
+#
+##################################################################
+
+##################################################################
+#
+# ### Start of constants
 #
 ##################################################################
 
@@ -148,18 +182,35 @@ use constant {
 
 use constant { true => 1, false => 0 };
 
+use constant { VERSION => 0.92 };
+
+##################################################################
+#
+# ### End of constants
+#
+##################################################################
+
+
+##################################################################
+#
+# ### Start of globals
+#
+##################################################################
+
 our $address_SOL = "0000";                  # Address of start of hex buffer line
                                             # Always a factor of 8 (8 byte boundary)
 our $hexcode_line_buffer = HEX_TEMPLATE;    # The boilerplate of the output
                                             # Insert hex over the xx
-our $current_hexcode_line_buffer_byte = 1;  # Pointer to which byte in the buffer
+#our $current_hexcode_line_buffer_byte = 1;  # Pointer to which byte in the hex buffer
                                             # From 1-8
 our $address;                               # Address of current line read
 our $hexcode_to_parse;                      # Hexcode of current line read
 our $num_bytes;                             # # of bytes of hexcode in current line read
 our @array;                                 # Will hold hex bytes of current line read
 our $ascii_line_buffer = ASCII_TEMPLATE;    # The boilerplate of the output
-our $current_ascii_line_buffer_byte = 1;    # Pointer to which byte in the buffer
+#our $current_ascii_line_buffer_byte = 1;    # Pointer to which byte in the ascii buffer
+
+our $current_buffer_byte = 1;               # Pointer to which byte in the buffer(s)
 
 our $opt_a;
 our $opt_b;
@@ -171,6 +222,7 @@ our $opt_l;
 our $opt_m;
 our $opt_o;
 our $opt_s;
+our $opt_t;
 our $opt_u;
 our $opt_v;
 our $opt_w;
@@ -194,54 +246,131 @@ our $fho;                                   # out file handle
 #
 ##################################################################
 
+#=pod
+
 ##################################################################
 #
 # ### Get Opt Long
 #
 ##################################################################
 
-my $man = 0;
-my $help = 0;
+## From https://perldoc.perl.org/Getopt::Long - thread safety
+#my $man = 0;
+#my $help = 0;
+#
+##GetOptions('help|?' => \$help, man => \$man) or pod2usage(2);
+#pod2usage(1) if $help;
+#pod2usage(-exitval => 0, -verbose => 2) if $man;
 
-#GetOptions('help|?' => \$help, man => \$man) or pod2usage(2);
-pod2usage(1) if $help;
-pod2usage(-exitval => 0, -verbose => 2) if $man;
 
-
-=pod
-
-# From https://stackoverflow.com/q/35508007/4424636 - start
-
-my %opt = ();
-
-GetOptions(
-  \%opt,
-  'help|h|?',
-  'dbtype=s',
-  'mode=s'  ,
-  'file=s@' ,
-  'qaname=s',
-) || pod2usage(1);
-
-_validate_inputs(%opt);
+## From https://stackoverflow.com/q/35508007/4424636 - start
+#
+#my %opt = ();
+#
+#GetOptions(
+#  \%opt,
+#  'help|h|?',
+#  'dbtype=s',
+#  'mode=s'  ,
+#  'file=s@' ,
+#  'qaname=s',
+#) || pod2usage(1);
+#
+#_validate_inputs(%opt);
 
 # From https://stackoverflow.com/q/35508007/4424636 - end
 
 
-# or from https://stackoverflow.com/a/11422904/4424636
-my ($input, $output);
-GetOptions('input=s' => \$input,'output=s' => \$output) or die;
+## or from https://stackoverflow.com/a/11422904/4424636
+#my ($input, $output);
+#GetOptions('input=s' => \$input,'output=s' => \$output) or die;
+#
+#open my $fh, '<', $input or die;
+#
+#while ( <$fh> ) { 
+#    ## Process file.
+#}
 
-open my $fh, '<', $input or die;
+# From docs long
+my $ascii = '';         # option variable with default value (false)
+my $blank = '';         # option variable with default value (false)
+my $code = '';          # option variable with default value (false)
+my $debug = '';         # option variable with default value (false)
+my $help = '';          # option variable with default value (false)
+my $input = '';         # option variable with default value
+my $location = '';      # option variable with default value (false)
+my $man = '';           # option variable with default value (false)
+my $output = '';        # option variable with default value
+my $space = '';         # option variable with default value (false)
+my $talkative = '';     # option variable with default value (false)
+my $upper = '';         # option variable with default value (false)
+my $upper_select = '';  # option variable with default value (false)
+my $verbose = '';       # option variable with default value (false)
+my $version = '';       # option variable with default value (false)
 
-while ( <$fh> ) { 
-    ## Process file.
+#GetOptions ('help' => \$help, 'verbose+' => \$verbose, 'upper' => \$upper);
+#GetOptions ('help' => \$help, 'verbose!' => \$verbose, 'upper' => \$upper, 'input=s' => \$input, 'output=s' => \$output);
+
+GetOptions ('ascii|a'           => \&handler_ascii, 
+            'blank|b'           => \&handler_blank, 
+            'code|c'            => \&handler_code, 
+            'debug|d'           => \&handler_debug, 
+            'help|h'            => \$help, 
+            'input|i=s'         => \&handler_input, 
+            'location|l'        => \&handler_location, 
+            'man|m'             => \$man, 
+            'output|o=s'        => \&handler_output, 
+            'quiet|q'           => sub { $verbose = 0 }, 
+            'space|s'           => \&handler_space, 
+            'talkative|t'       => \$talkative, 
+            'upper|u'           => \&handler_upper, 
+            'upper_select|x=s'  => \&handler_upper_select, 
+            'verbose!'        => \$verbose, 
+            'version|v'         => \$version
+           )  or die "Usage: $0 --from NAME\n";
+
+
+if ($input or $ARGV[0]) {
+  if ($input) {
+    print "i=$input\n" if DEBUG or $opt_d;
+    print "Filename to read: $input\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    $infile = $input;
+  } else {
+    print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    $infile = $ARGV[0];
+  }
+  open $fhi, '<', $infile or die $!;
+
+} else {
+  # Just use STDIN
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fhi = \*STDIN;
+  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+}
+
+if ($output or $ARGV[1]) {
+  if ($output) {
+    print "o=$output\n" if DEBUG or $opt_d;
+    print "Filename to write: $output\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    $outfile = $output;
+  } else {
+    print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    $outfile = $ARGV[1];
+  }
+  open $fho, '>', $outfile or die $!;
+
+} else {
+  # Just use STDOUT
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fho = \*STDOUT;
+  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
 }
 
 
-=cut
 
-#=pod
+#=cut
+
+=pod
 
 ##################################################################
 #
@@ -263,17 +392,17 @@ if ($opt_h) {
   exit(0);
 }
 if ($opt_v) {
-  #version_mess();
-  #exit(0);
+  version_mess();
+  exit(0);
 }
 
 if ($opt_i or $ARGV[0]) {
   if ($opt_i) {
     print "i=$opt_i\n" if DEBUG or $opt_d;
-    print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $infile = $opt_i;
   } else {
-    print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $infile = $ARGV[0];
   }
   open $fhi, '<', $infile or die $!;
@@ -282,34 +411,32 @@ if ($opt_i or $ARGV[0]) {
   # Just use STDIN
   # From https://stackoverflow.com/a/29167251/4424636
   $fhi = \*STDIN;
-  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
 }
 
-=pod
 
-if ($opt_i) {
-  print "i=$opt_i\n" if DEBUG or $opt_d;
-  print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-  $infile = $opt_i;
+#if ($opt_i) {
+#  print "i=$opt_i\n" if DEBUG or $opt_d;
+#  print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#  $infile = $opt_i;
+#
+#  open $fhi, '<', $infile or die $!;
+#
+#} else {
+#  # Just use STDIN
+#  # From https://stackoverflow.com/a/29167251/4424636
+#  $fhi = \*STDIN;
+#  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#}
 
-  open $fhi, '<', $infile or die $!;
-
-} else {
-  # Just use STDIN
-  # From https://stackoverflow.com/a/29167251/4424636
-  $fhi = \*STDIN;
-  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-}
-
-=cut
 
 if ($opt_o or $ARGV[1]) {
   if ($opt_o) {
     print "o=$opt_o\n" if DEBUG or $opt_d;
-    print "Filename to write: $opt_o\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    print "Filename to write: $opt_o\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $outfile = $opt_o;
   } else {
-    print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+    print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $outfile = $ARGV[1];
   }
   open $fho, '>', $outfile or die $!;
@@ -318,58 +445,57 @@ if ($opt_o or $ARGV[1]) {
   # Just use STDOUT
   # From https://stackoverflow.com/a/29167251/4424636
   $fho = \*STDOUT;
-  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
+  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
 }
 
-=pod
 
-if ($opt_o) {
-  print "o=$opt_o\n" if DEBUG or $opt_d;
-  print "Filename to write: $opt_o\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-  $outfile = $opt_o;
-
-  open $fho, '>', $outfile or die $!;
-
-} else {
-  # Just use STDOUT
-  # From https://stackoverflow.com/a/29167251/4424636
-  $fho = \*STDOUT;
-  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-}
+#if ($opt_o) {
+#  print "o=$opt_o\n" if DEBUG or $opt_d;
+#  print "Filename to write: $opt_o\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#  $outfile = $opt_o;
+#
+#  open $fho, '>', $outfile or die $!;
+#
+#} else {
+#  # Just use STDOUT
+#  # From https://stackoverflow.com/a/29167251/4424636
+#  $fho = \*STDOUT;
+#  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#}
 
 =cut
 
-#=cut
+##################################################################
+#
+# ### Pure @ARGV stuff - ignore
+#
+##################################################################
 
-=pod
-
-if ($ARGV[0]) {
-  print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-  $infile = $ARGV[0];
-
-  open $fhi, '<', $infile or die $!;
-
-} else {
-  # Just use STDIN
-  # From https://stackoverflow.com/a/29167251/4424636
-  $fhi = \*STDIN;
-  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-}
-
-if ($ARGV[1]) {
-  print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-  $outfile = $ARGV[1];
-
-  open $fho, '>', $outfile or die $!;
-
-} else {
-  # Just use STDOUT
-  # From https://stackoverflow.com/a/29167251/4424636
-  $fho = \*STDOUT;
-  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_v;
-}
-
-=cut
+#if ($ARGV[0]) {
+#  print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#  $infile = $ARGV[0];
+#
+#  open $fhi, '<', $infile or die $!;
+#
+#} else {
+#  # Just use STDIN
+#  # From https://stackoverflow.com/a/29167251/4424636
+#  $fhi = \*STDIN;
+#  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#}
+#
+#if ($ARGV[1]) {
+#  print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#  $outfile = $ARGV[1];
+#
+#  open $fho, '>', $outfile or die $!;
+#
+#} else {
+#  # Just use STDOUT
+#  # From https://stackoverflow.com/a/29167251/4424636
+#  $fho = \*STDOUT;
+#  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#}
 
 ##################################################################
 #
@@ -406,7 +532,8 @@ while(my $line = <$fhi>) {
 
     parse_the_hex($num_bytes);
     #do_the_string_thing();
-    do_the_string_thing($num_bytes, $current_hexcode_line_buffer_byte, $hexcode_line_buffer, $address_SOL, $ascii_line_buffer);
+    #do_the_string_thing($num_bytes, $current_hexcode_line_buffer_byte, $hexcode_line_buffer, $address_SOL, $ascii_line_buffer);
+    do_the_string_thing($num_bytes, $current_buffer_byte, $hexcode_line_buffer, $address_SOL, $ascii_line_buffer);
   } else {
 
     # Get the standard hex listing with address and hexcode 
@@ -445,7 +572,8 @@ while(my $line = <$fhi>) {
         check_for_address_change($address, $address_SOL);
       }
       #do_the_string_thing();
-      do_the_string_thing($num_bytes, $current_hexcode_line_buffer_byte, $hexcode_line_buffer, $address_SOL, $ascii_line_buffer);
+      #do_the_string_thing($num_bytes, $current_hexcode_line_buffer_byte, $hexcode_line_buffer, $address_SOL, $ascii_line_buffer);
+      do_the_string_thing($num_bytes, $current_buffer_byte, $hexcode_line_buffer, $address_SOL, $ascii_line_buffer);
     }
   }
   # Can't do it here (yet), as it depends on ifs... even an elsif won't help
@@ -482,48 +610,49 @@ Returns ASCII buffer line.
 
 =cut
 
-sub print_ascii_line
+sub print_ascii_line ()
 {
   return $main::ascii_line_buffer;
 }
 
-=item do_the_ascii_thing()
+=item do_the_ascii_thing($)
 
 Populates the ASCII buffer line with characters.
 
 =cut
 
-sub do_the_ascii_thing
+sub do_the_ascii_thing ($)
 {
   my $num = shift;
 
   if (hex($num)>32 and hex($num)<128) {
-    substr($main::ascii_line_buffer, $main::current_ascii_line_buffer_byte-1, 1) = to_ascii(hex($num)); # deletes the substring in offset 0-2
+    #substr($main::ascii_line_buffer, $main::current_ascii_line_buffer_byte-1, 1) = to_ascii(hex($num)); # deletes the substring in offset 0-2
+    substr($main::ascii_line_buffer, $main::current_buffer_byte-1, 1) = to_ascii(hex($num)); # deletes the substring in offset 0-2
   }
-  $main::current_ascii_line_buffer_byte++;
+  #$main::current_ascii_line_buffer_byte++;
 
 }
 
-=item to_ascii()
+=item to_ascii($)
 
 Returns ASCII value of decimal.
 
 =cut
 
-sub to_ascii
+sub to_ascii ($)
 {
   my $num = shift;
 
   return chr($num);
 }
 
-=item to_hex()
+=item to_hex($)
 
 Returns hex value of decimal.
 
 =cut
 
-sub to_hex
+sub to_hex ($)
 {
   my $num =shift;
 
@@ -534,13 +663,13 @@ sub to_hex
   }
 }
 
-=item address_to_hex()
+=item address_to_hex($)
 
 Returns hex value of decimal.
 
 =cut
 
-sub address_to_hex
+sub address_to_hex ($)
 {
   my $num =shift;
 
@@ -551,13 +680,13 @@ sub address_to_hex
   }
 }
 
-=item code_to_hex()
+=item code_to_hex($)
 
 Returns hex value of decimal.
 
 =cut
 
-sub code_to_hex
+sub code_to_hex ($)
 {
   my $num =shift;
 
@@ -568,28 +697,13 @@ sub code_to_hex
   }
 }
 
-=item check_for_address_change_simple()
-
-Checks for drastic address change.
-Simple version - logic does not work. Hex conversion issue?
-
-=cut
-
-sub check_for_address_change_simple
-{
-  # Check here for sudden address change
-  if (hex($address) > (hex($address_SOL)+8) || hex($address) < hex($address_SOL)) {
-    reset_the_line(MOD_8);
-  }
-}
-
-=item check_for_address_change()
+=item check_for_address_change($$)
 
 Checks for drastic address change
 
 =cut
 
-sub check_for_address_change
+sub check_for_address_change ($$)
 {
 
   my ( $decimal_address, $decimal_address_SOL ) = @_;
@@ -609,12 +723,14 @@ sub check_for_address_change
   # Check to see if current address is contiguous
   # ... i.e. follows the previous
   #if($main::address <> $main::address_SOL + $main::current_hexcode_line_buffer_byte ) {
-  elsif($decimal_address != $decimal_address_SOL + $main::current_hexcode_line_buffer_byte - 1 ) {
+  #elsif($decimal_address != $decimal_address_SOL + $main::current_hexcode_line_buffer_byte - 1 ) {
+  elsif($decimal_address != $decimal_address_SOL + $main::current_buffer_byte - 1 ) {
     # We have a non-sequential address
     # ... but are still within the range of 8 bytes...
     # ... so we are on the same line.
-    $main::current_hexcode_line_buffer_byte = $decimal_address - $decimal_address_SOL + 1;
-    $main::current_ascii_line_buffer_byte   = $decimal_address - $decimal_address_SOL + 1 if DO_ASCII_SHOW or $opt_a;
+    $main::current_buffer_byte = $decimal_address - $decimal_address_SOL + 1;
+    #$main::current_hexcode_line_buffer_byte = $decimal_address - $decimal_address_SOL + 1;
+    #$main::current_ascii_line_buffer_byte   = $decimal_address - $decimal_address_SOL + 1 if DO_ASCII_SHOW or $opt_a;
   } else {
     # We have a sequential address
     # Do nothing as increment is done in do_the_xxx_thing()
@@ -629,7 +745,7 @@ Replace any 'x' placemarkers for spaces in the hex line output buffer
 
 =cut
 
-sub blank_any_x
+sub blank_any_x()
 {
   my $length = length($main::hexcode_line_buffer);
 
@@ -644,13 +760,13 @@ sub blank_any_x
   }
 }
 
-=item do_the_print()
+=item do_the_print($$$)
 
 Print the start of line address and the hex line output buffer
 
 =cut
 
-sub do_the_print
+sub do_the_print ($$$)
 {
   my ( $hexcode_line_buf, $addr_SOL, $ascii_line_buf) = @_;
 
@@ -683,13 +799,13 @@ sub do_the_print
   }
 }
 
-=item parse_the_hex()
+=item parse_the_hex($)
 
 Parse the current line's hex code block and extract the bytes into @array
 
 =cut
 
-sub parse_the_hex
+sub parse_the_hex ($)
 {
   my $num_byte = shift;
 
@@ -700,31 +816,44 @@ sub parse_the_hex
   }
 }
 
-=item reset_hexcode_output_buffer()
+#=item reset_hexcode_output_buffer()
+#
+#Reset both the hex line output buffer and current byte counter
+#
+#=cut
+#
+#sub reset_hexcode_output_buffer ()
+#{
+#  $main::hexcode_line_buffer = HEX_TEMPLATE;
+#  $main::current_hexcode_line_buffer_byte = 1;
+#}
+
+#=item reset_ascii_output_buffer()
+#
+#Reset both the hex line output buffer and current byte counter
+#
+#=cut
+#
+#sub reset_ascii_output_buffer ()
+#{
+#  $main::ascii_line_buffer = ASCII_TEMPLATE;
+#  $main::current_ascii_line_buffer_byte = 1;
+#}
+
+=item reset_output_buffers()
 
 Reset both the hex line output buffer and current byte counter
 
 =cut
 
-sub reset_hexcode_output_buffer
-{
-  $main::hexcode_line_buffer = HEX_TEMPLATE;
-  $main::current_hexcode_line_buffer_byte = 1;
-}
-
-=item reset_ascii_output_buffer()
-
-Reset both the hex line output buffer and current byte counter
-
-=cut
-
-sub reset_ascii_output_buffer
+sub reset_output_buffers ()
 {
   $main::ascii_line_buffer = ASCII_TEMPLATE;
-  $main::current_ascii_line_buffer_byte = 1;
+  $main::hexcode_line_buffer = HEX_TEMPLATE;
+  $main::current_buffer_byte = 1;
 }
 
-=item reset_the_line()
+=item reset_the_line($)
 
 Print and reset the hex line output buffer.
 
@@ -735,15 +864,16 @@ Pass 0 to use the address of the current assembler line to determine nearest mod
 
 =cut
 
-sub reset_the_line
+sub reset_the_line ($)
 {
   my $do_calc = shift;
 
   do_the_print($main::hexcode_line_buffer, $main::address_SOL, $main::ascii_line_buffer);
 
 
-  reset_ascii_output_buffer() if DO_ASCII_SHOW or $opt_a;     # Do in this order! -> #1
-  reset_hexcode_output_buffer();                              # Do in this order! -> #1
+  #reset_ascii_output_buffer() if DO_ASCII_SHOW or $opt_a;     # Do in this order! -> #1
+  #reset_hexcode_output_buffer();                              # Do in this order! -> #1
+  reset_output_buffers();
   if ($do_calc){
     calc_next_address_SOL();                                  # Do in this order! -> #2
   } else {
@@ -751,7 +881,7 @@ sub reset_the_line
   }
 }
 
-=item set_next_address_SOL()
+=item set_next_address_SOL($)
 
 Set next start of line address, 
 Get from address stated on current input line.
@@ -762,7 +892,7 @@ using the address of the start of the new sequence.
 
 =cut
 
-sub set_next_address_SOL
+sub set_next_address_SOL ($)
 {
 
   my $current_address = shift;
@@ -782,22 +912,24 @@ sub set_next_address_SOL
   $main::address_SOL = $first_factor_of_8;
   # Get the difference between start and current positions, in decimal
   my $decimal_current_address = hex($current_address);
-  $main::current_hexcode_line_buffer_byte = $decimal_current_address - $decimal_first_factor_of_8 + 1;
+  #$main::current_hexcode_line_buffer_byte = $decimal_current_address - $decimal_first_factor_of_8 + 1;
+  $main::current_buffer_byte = $decimal_current_address - $decimal_first_factor_of_8 + 1;
 }
 
-=item do_the_string_thing()
+=item do_the_string_thing($$$$$)
 
 Fill out the hex line output buffer
 Replace the "x" place markers with the hex code for the bytes
 
 =cut
 
-sub do_the_string_thing
+sub do_the_string_thing ($$$$$)
 {
   my ( $num_byte, $current_hexcode_line_buf_byte, $hexcode_line_buf, $addr_SOL, $ascii_line_buf) = @_;
 
   for (my $index = 0; $index < $num_byte; $index++) {
-    print "Buf: $main::hexcode_line_buffer   Ptr: $main::current_hexcode_line_buffer_byte  Idx: $main::array[$index] -> @main::array\n" if DEBUG or $opt_d;
+    #print "Buf: $main::hexcode_line_buffer   Ptr: $main::current_hexcode_line_buffer_byte  Idx: $main::array[$index] -> @main::array\n" if DEBUG or $opt_d;
+    print "Buf: $main::hexcode_line_buffer   Ptr: $main::current_buffer_byte  Idx: $main::array[$index] -> @main::array\n" if DEBUG or $opt_d;
 
     # Substitute the 2 digit hex number into the buffer,
     # at the correct location.
@@ -805,7 +937,9 @@ sub do_the_string_thing
     # This ignores the case - don't use
     #substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = to_hex(hex($main::array[$index]));
     # This works!!!
-    substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = code_to_hex(hex($main::array[$index]));
+    #substr($main::hexcode_line_buffer, ($main::current_hexcode_line_buffer_byte-1)*2+(1*($main::current_hexcode_line_buffer_byte-1)), 2) = code_to_hex(hex($main::array[$index]));
+    # Using unified buffer byte
+    substr($main::hexcode_line_buffer, ($main::current_buffer_byte-1)*2+(1*($main::current_buffer_byte-1)), 2) = code_to_hex(hex($main::array[$index]));
     # This should work but misses out random characters
     #substr($main::hexcode_line_buffer, ($current_hexcode_line_buf_byte-1)*2+(1*($current_hexcode_line_buf_byte-1)), 2) = code_to_hex(hex($main::array[$index]));
     # This will not work as hexcode_line_buf passed by value, not reference
@@ -813,7 +947,9 @@ sub do_the_string_thing
 
     # Increment buffer pointer
     #$main::current_hexcode_line_buffer_byte = $main::current_hexcode_line_buffer_byte +1;
-    $main::current_hexcode_line_buffer_byte++;
+    #$main::current_hexcode_line_buffer_byte++;
+    # Use unified buffer byte pointer
+    $main::current_buffer_byte++;
     # This will not work as current_hexcode_line_buf_byte passed by value, not reference
     #current_hexcode_line_buf_byte++ ;;
 
@@ -822,21 +958,23 @@ sub do_the_string_thing
     do_the_ascii_thing($main::array[$index]) if DO_ASCII_SHOW or $opt_a;
 
     # Check to see if pointer has reached end of line
-    check_over_8($main::current_hexcode_line_buffer_byte, $main::hexcode_line_buffer, $main::address_SOL, $main::ascii_line_buffer);
+    #check_over_8($main::current_hexcode_line_buffer_byte, $main::hexcode_line_buffer, $main::address_SOL, $main::ascii_line_buffer);
+    # Use unified buffer byte pointer
+    check_over_8($main::current_buffer_byte, $main::hexcode_line_buffer, $main::address_SOL, $main::ascii_line_buffer);
     # Can not send $current_hexcode_line_buf_byte as...
     # ... $main::current_hexcode_line_buffer_byte has changed!
     #check_over_8($current_hexcode_line_buf_byte, $hexcode_line_buf, $addr_SOL, $ascii_line_buf);
   }
 }
 
-=item check_over_8()
+=item check_over_8($$$$)
 
 Is the current line buffer byte over 8? 
 If so, then new line.
 
 =cut
 
-sub check_over_8
+sub check_over_8 ($$$$)
 {
   # This is best with passed arguments if it is at top level, and not inside do_the_string_thing() - why? Because otherwise, you end up passing down the same variables, down the chain, or giving up and just using $main::xxx half way up the chain. Besides, this function feels like it should be done in main().
   my ( $current_hexcode_line_buf_byte, $hexcode_line_buf, $addr_SOL, $ascii_line_buf) = @_;
@@ -856,20 +994,20 @@ for contiguous blocks of code.
 
 =cut
 
-sub calc_next_address_SOL
+sub calc_next_address_SOL ()
 {
   my $next_address = hex($main::address_SOL) + 8;
   $main::address_SOL = address_to_hex($next_address);
 }
 
-=item address_div_8()
+=item address_div_8($)
 
 Is the hex address divisible by 8? 
 If so, then new line.
 
 =cut
 
-sub address_div_8
+sub address_div_8 ($)
 {
   my $a = shift;
 
@@ -879,22 +1017,180 @@ sub address_div_8
   return is_mod_8($decimal);
 }
 
-
-=item is_mod_8()
+=item is_mod_8($)
 
 Is number divisible by 8?
 
 =cut
 
-sub is_mod_8 {
+sub is_mod_8 ($)
+{
   # From https://stackoverflow.com/a/24944726/4424636
   my $number = shift;
   return not ($number % 8);   # Modulo arithmetic
 }
 
+=item help_mess()
+
+Help message.
+
+=cut
+
+sub help_mess ()
+{
+  print "Usage:\n\n";
+  print "    cat freeway_frog_full.asm | perl hexextractor.pl -abcls
+    perl hexextractor.pl -alcxwbsv -i in.asm -o out.hex
+    perl hexextractor.pl -alcxwbsv freeway_frog_full.asm freeway_frog.hex
+
+    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs -o frogger.hex
+    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs fraggle.hex
+
+    perl hexextractor.pl -h
+    perl hexextractor.pl -v
+\n";
+
+  print "hexextractor [abcdhi:lmo:stuvwx] [file ...]
+
+ Options:
+   -a               show ASCII table
+   -b               blank empty memory locations
+   -c               show hex dump
+   -d               debug mode
+   -h               brief help message
+   -i               input file
+   -l               show addresses
+   -m               full documentation
+   -o               output file
+   -s               add spaces between hex bytes of code
+   -t               talkative (i.e. verbose)
+   -u               global uppercase
+   -v               display version
+   -w               uppercase addresses
+   -x               uppercase code
+";
+}
+
+=item version_mess()
+
+Version message.
+
+=cut
+
+sub version_mess ()
+{
+  print VERSION."\n";
+}
+
+=item handler_ascii()
+
+Handler for 'ascii' long opt.
+
+=cut
+
+sub handler_ascii ()
+{
+  $main::opt_a = 1;
+}
+
+=item handler_blank()
+
+Handler for 'blank' long opt.
+
+=cut
+
+sub handler_blank ()
+{
+  $main::opt_b = 1;
+}
+
+=item handler_code()
+
+Handler for 'code' long opt.
+
+=cut
+
+sub handler_code ()
+{
+  $main::opt_c = 1;
+}
+
+=item handler_debug()
+
+Handler for 'debug' long opt.
+
+=cut
+
+sub handler_debug ()
+{
+  $main::opt_d = 1;
+}
+
+=item handler_location()
+
+Handler for 'location' long opt.
+
+=cut
+
+sub handler_location ()
+{
+  $main::opt_l = 1;
+}
+
+=item handler_space()
+
+Handler for 'space' long opt.
+
+=cut
+
+sub handler_space ()
+{
+  $main::opt_s = 1;
+}
+
+=item handler_upper()
+
+Handler for 'upper' long opt.
+
+=cut
+
+sub handler_upper ()
+{
+  $main::opt_u = 1;
+}
+
+=item handler_upper_select()
+
+Handler for 'upper_select' long opt.
+
+=cut
+
+sub handler_upper_select ()
+{
+  my ($opt_name, $opt_value) = @_;
+
+  print "in upper_select: " if DEBUG or $opt_d;
+
+  if ($opt_value eq "address") {
+    $main::opt_w = 1; # Upper case addresses
+    print "address \n" if DEBUG or $opt_d;
+  } elsif ($opt_value eq "code") {
+    $main::opt_x = 1; # Upper case code
+    print "code\n" if DEBUG or $opt_d;
+  } elsif ($opt_value eq "both") {
+    $main::opt_w = 1; # Upper case addresses
+    $main::opt_x = 1; # Upper case code
+    print "both\n" if DEBUG or $opt_d;
+  }
+}
+
 =back
 
 =cut
+
+__DATA__
+
+# Put the assembler file in full here. Access via file handle hexextractor::DATA
 
 __END__
 
@@ -946,6 +1242,8 @@ if ( my ( $timestamp, $chnl, $page ) = m/(.*):.*solo_video_channel_write(.*): qu
 #
 # ### USAGE POD (start)
 #
+#                    - long getopts
+#
 ##################################################################
 
 =head1 NAME
@@ -957,20 +1255,92 @@ sample - Using Getopt::Long and Pod::Usage
 sample [options] [file ...]
 
  Options:
+   -ascii           show ASCII table 
+   -blank           blank empty memory locations 
+   -code            show hex dump 
+   -debug           debug mode 
    -help            brief help message
-   -man             full documentation
+   -input           input file <filename>
+   -location        show addresses 
+   -man             full documentation 
+   -output          output file <filename>
+   -quiet           not verbose 
+   -space           add spaces between hex bytes of code
+   -talkative       talkative (i.e. verbose) 
+   -upper           global uppercase 
+   -upper_select    uppercase addresses/code <addresss|code|both>
+   -verbose         verbose 
+   -version         display version
 
 =head1 OPTIONS
 
 =over 8
 
+=item B<-ascii>
+
+Show ASCII table.
+
+=item B<-blank>
+
+Blank empty memory locations.
+Supress???
+
+=item B<-code>
+
+Show hex dump.
+
+=item B<-debug>
+
+Set debug mode.
+
 =item B<-help>
 
 Print a brief help message and exits.
 
+=item B<-input>
+
+Specify input file.
+
+=item B<-location>
+
+Show addresses.
+
 =item B<-man>
 
 Prints the manual page and exits.
+
+=item B<-output>
+
+Specify output file.
+
+=item B<-quiet>
+
+Disable verbose mode.
+
+=item B<-space>
+
+Add spaces between hex bytes of code.
+Supress???
+
+=item B<-talkative>
+
+Talkative (i.e. verbose) mode.
+
+=item B<-upper>
+
+Use uppercase for all hexadecimal.
+
+=item B<-upper_select>
+
+Specify <address|code|both> to use uppercase for hexadecimal.
+
+=item B<-verbose>
+
+Set verbose mode.
+
+=item B<-version>
+
+Display version.
 
 =back
 
@@ -984,6 +1354,8 @@ useful with the contents thereof.
 ##################################################################
 #
 # ### USAGE POD (end)
+#
+#                    - long getopts
 #
 ##################################################################
 
@@ -999,11 +1371,11 @@ useful with the contents thereof.
 
 =head1 NAME
 
-hexextrator - Extract a hex dump from assembly listing
+hexextractor - Extract a hex dump from assembly listing
 
 =head1 SYNOPSIS
 
-hexextrator [abcdhi:lmo:suvwx] [file ...]
+hexextractor [abcdhi:lmo:stuvwx] [file ...]
 
  Options:
    -a               show ASCII table
@@ -1016,6 +1388,7 @@ hexextrator [abcdhi:lmo:suvwx] [file ...]
    -m               full documentation
    -o               output file
    -s               add spaces between hex bytes of code
+   -t               talkative (i.e. verbose)
    -u               global uppercase
    -v               display version
    -w               uppercase addresses
@@ -1066,6 +1439,10 @@ Specify output file.
 
 Add spaces between hex bytes of code.
 Supress???
+
+=item B<-t>
+
+Talkative (i.e. verbose) mode.
 
 =item B<-u>
 
