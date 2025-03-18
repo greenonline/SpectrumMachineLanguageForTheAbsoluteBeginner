@@ -1,6 +1,8 @@
 #!/usr/local/bin/perl -w
 
-=head1 TODO
+=begin comment_TODO
+
+TODO:
 
  - reduce number of globals
    - check for no globals: search for "main::" - there should be no occurences
@@ -10,12 +12,200 @@
  - check_over_8() should be called from main(), as should do_the_ascii_thing()
  - &blah (\@hexcode);
 
+=end comment_TODO
+
+=begin comment_old_usage
+
 =head1 NAME
 
 Hexextractor - Extract a hex dump from assembler listing
 
 =head1 SYNOPSIS
 
+=head1 DESCRIPTION
+
+Extracts a hex dump from assembler listing.
+
+Written specifically for the full assembler/assembly listing of Freeway Frog (i.e. Frogger) from the book, Spectrum Machine Language for the Absolute Beginner, by William Tang (1982).
+
+=cut
+
+=end comment_old_usage
+
+=cut
+
+##################################################################
+#
+# ### USAGE POD (start)
+#
+#                    - long getopts
+#
+##################################################################
+
+#=begin commented_out_usage_long_getopts
+
+=head1 NAME
+
+hexextractor - Extract a hex dump from assembly listing
+
+=head1 SYNOPSIS
+
+hexextractor [options] [infile ... [outfile ...] ]
+
+ Options:
+   -ascii           show ASCII table 
+   -blank           blank empty memory locations 
+   -code            show hex dump 
+   -debug           debug mode 
+   -extra           read internal file 
+   -help            brief help message
+   -input           input file <filename>
+   -location        show addresses 
+   -man             full documentation 
+   -output          output file <filename>
+   -quiet           not verbose 
+   -space           add spaces between hex bytes of code
+   -talkative       talkative (i.e. verbose) 
+   -upper           global uppercase 
+   -upper_select    uppercase addresses/code <addresss|code|both>
+   -verbose         verbose 
+   -version         display version
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-ascii>
+
+Show ASCII table.
+
+=item B<-blank>
+
+Blank empty memory locations.
+Supress???
+
+=item B<-code>
+
+Show hex dump.
+
+=item B<-debug>
+
+Set debug mode.
+
+=item B<-e>
+
+Read the internal ASM document (if present) - no need to use external input file.
+
+=item B<-help>
+
+Print a brief help message and exits.
+
+=item B<-input>
+
+Specify input file.
+
+=item B<-location>
+
+Show addresses.
+
+=item B<-man>
+
+Prints the manual page and exits.
+
+=item B<-output>
+
+Specify output file.
+
+=item B<-quiet>
+
+Disable verbose mode.
+
+=item B<-space>
+
+Add spaces between hex bytes of code.
+Supress???
+
+=item B<-talkative>
+
+Talkative (i.e. verbose) mode.
+
+=item B<-upper>
+
+Use uppercase for all hexadecimal.
+
+=item B<-upper_select>
+
+Specify <address|code|both> to use uppercase for hexadecimal.
+
+=item B<-verbose>
+
+Set verbose mode.
+
+=item B<-version>
+
+Display version.
+
+=back
+
+=head1 DESCRIPTION
+
+Extracts a hex dump from assembler listing.
+
+Written specifically for the full assembler/assembly listing of Freeway Frog (i.e. Frogger) from the book, Spectrum Machine Language for the Absolute Beginner, by William Tang (1982).
+
+=cut
+
+#=end commented_out_usage_long_getopts
+
+#=cut
+
+##################################################################
+#
+# ### USAGE POD (end)
+#
+#                    - long getopts
+#
+##################################################################
+
+
+
+##################################################################
+#
+# ### USAGE POD (start)
+#
+# For 'abcdehlmsuvwx' - short getopts
+#
+##################################################################
+
+=begin commented_out_usage_short_getopts
+
+=head1 NAME
+
+hexextractor - Extract a hex dump from assembly listing
+
+=head1 SYNOPSIS
+
+hexextractor [abcdehi:lmo:stuvwx] [infile ... [outfile ...] ]
+
+ Options:
+   -a               show ASCII table
+   -b               blank empty memory locations
+   -c               show hex dump
+   -d               debug mode
+   -e               read internal file
+   -h               brief help message
+   -i               input file
+   -l               show addresses
+   -m               full documentation
+   -o               output file
+   -s               add spaces between hex bytes of code
+   -t               talkative (i.e. verbose)
+   -u               global uppercase
+   -v               display version
+   -w               uppercase addresses
+   -x               uppercase code
+
+ Examples:
     cat freeway_frog_full.asm | perl hexextractor.pl -abcls
     perl hexextractor.pl -alcxwbsv -i in.asm -o out.hex
     perl hexextractor.pl -alcxwbsv freeway_frog_full.asm freeway_frog.hex
@@ -25,6 +215,80 @@ Hexextractor - Extract a hex dump from assembler listing
     perl hexextractor.pl -h
     perl hexextractor.pl -v
 
+
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-a>
+
+Show ASCII table.
+
+=item B<-b>
+
+Blank empty memory locations.
+Supress???
+
+=item B<-c>
+
+Show hex dump.
+
+=item B<-d>
+
+Set debug mode.
+
+=item B<-e>
+
+Read the internal ASM document (if present) - no need to use external input file.
+
+=item B<-h>
+
+Print a brief help message and exits.
+
+=item B<-i>
+
+Specify input file.
+
+=item B<-l>
+
+Show addresses.
+
+=item B<-m>
+
+Prints the manual page and exits.
+
+=item B<-o>
+
+Specify output file.
+
+=item B<-s>
+
+Add spaces between hex bytes of code.
+Supress???
+
+=item B<-t>
+
+Talkative (i.e. verbose) mode.
+
+=item B<-u>
+
+Use uppercase for all hexadecimal.
+
+=item B<-v>
+
+Display version.
+
+=item B<-w>
+
+Use uppercase for hexadecimal addresses.
+
+=item B<-x>
+
+Use uppercase for hexadecimal code bytes.
+
+=back
+
 =head1 DESCRIPTION
 
 Extracts a hex dump from assembler listing.
@@ -32,6 +296,20 @@ Extracts a hex dump from assembler listing.
 Written specifically for the full assembler/assembly listing of Freeway Frog (i.e. Frogger) from the book, Spectrum Machine Language for the Absolute Beginner, by William Tang (1982).
 
 =cut
+
+=end commented_out_usage_short_getopts
+
+=cut
+
+##################################################################
+#
+# ### USAGE POD (end)
+#
+# For 'abcdehlmsuvwx' - short getopts
+#
+##################################################################
+
+
 
 ##################################################################
 #
@@ -216,6 +494,7 @@ our $opt_a;
 our $opt_b;
 our $opt_c;
 our $opt_d;
+our $opt_e;
 our $opt_h;
 our $opt_i;
 our $opt_l;
@@ -246,7 +525,7 @@ our $fho;                                   # out file handle
 #
 ##################################################################
 
-#=pod
+#=begin commented_out_long_getopts_code
 
 ##################################################################
 #
@@ -296,6 +575,7 @@ my $ascii = '';         # option variable with default value (false)
 my $blank = '';         # option variable with default value (false)
 my $code = '';          # option variable with default value (false)
 my $debug = '';         # option variable with default value (false)
+my $extra = '';         # option variable with default value (false)
 my $help = '';          # option variable with default value (false)
 my $input = '';         # option variable with default value
 my $location = '';      # option variable with default value (false)
@@ -315,6 +595,7 @@ GetOptions ('ascii|a'           => \&handler_ascii,
             'blank|b'           => \&handler_blank, 
             'code|c'            => \&handler_code, 
             'debug|d'           => \&handler_debug, 
+            'extra|e'           => \&handler_extra, 
             'help|h'            => \$help, 
             'input|i=s'         => \&handler_input, 
             'location|l'        => \&handler_location, 
@@ -335,17 +616,22 @@ if ($input or $ARGV[0]) {
     print "i=$input\n" if DEBUG or $opt_d;
     print "Filename to read: $input\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
     $infile = $input;
-  } else {
+  } elsif ($ARGV[0]) {
     print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
     $infile = $ARGV[0];
+  } else {
+    print "Unknown file error", die $!;
   }
   open $fhi, '<', $infile or die $!;
 
+} elsif ($opt_e) {
+  print "Filename to read: Internal DATA\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    $fhi = \*DATA;
 } else {
   # Just use STDIN
   # From https://stackoverflow.com/a/29167251/4424636
   $fhi = \*STDIN;
-  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+  print "Reading from STDIN\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
 }
 
 if ($output or $ARGV[1]) {
@@ -366,11 +652,11 @@ if ($output or $ARGV[1]) {
   print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
 }
 
-
+#=end commented_out_long_getopts_code
 
 #=cut
 
-=pod
+=begin commented_out_short_getopts_code
 
 ##################################################################
 #
@@ -401,17 +687,21 @@ if ($opt_i or $ARGV[0]) {
     print "i=$opt_i\n" if DEBUG or $opt_d;
     print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $infile = $opt_i;
-  } else {
+  } elsif ($ARGV[0]) {
     print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $infile = $ARGV[0];
+  } else {
+    print "Unknown file error", die $!;
   }
   open $fhi, '<', $infile or die $!;
-
+} elsif ($opt_e) {
+  print "Filename to read: Internal DATA\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    $fhi = \*DATA;
 } else {
   # Just use STDIN
   # From https://stackoverflow.com/a/29167251/4424636
   $fhi = \*STDIN;
-  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+  print "Reading from STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
 }
 
 
@@ -426,7 +716,7 @@ if ($opt_i or $ARGV[0]) {
 #  # Just use STDIN
 #  # From https://stackoverflow.com/a/29167251/4424636
 #  $fhi = \*STDIN;
-#  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+#  print "Reading from STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
 #}
 
 
@@ -462,6 +752,8 @@ if ($opt_o or $ARGV[1]) {
 #  $fho = \*STDOUT;
 #  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
 #}
+
+=end commented_out_short_getopts_code
 
 =cut
 
@@ -625,7 +917,7 @@ sub do_the_ascii_thing ($)
 {
   my $num = shift;
 
-  if (hex($num)>32 and hex($num)<128) {
+  if (hex($num)>31 and hex($num)<127) {
     #substr($main::ascii_line_buffer, $main::current_ascii_line_buffer_byte-1, 1) = to_ascii(hex($num)); # deletes the substring in offset 0-2
     substr($main::ascii_line_buffer, $main::current_buffer_byte-1, 1) = to_ascii(hex($num)); # deletes the substring in offset 0-2
   }
@@ -1126,6 +1418,17 @@ sub handler_debug ()
   $main::opt_d = 1;
 }
 
+=item handler_extra()
+
+Handler for 'extra' long opt.
+
+=cut
+
+sub handler_extra ()
+{
+  $main::opt_e = 1;
+}
+
 =item handler_location()
 
 Handler for 'location' long opt.
@@ -1194,7 +1497,7 @@ __DATA__
 
 __END__
 
-=head1 References:
+=head1 REFERENCES
 
 =pod
 
@@ -1218,11 +1521,12 @@ Modify to
 
 ^\s*([0-9a-fA-F]{2}(?:\s|$))+
 
+
 =end text
 
 =cut
 
-=head1 Not used:
+=head1 NOT USED
 
 =pod
 
@@ -1237,244 +1541,5 @@ if ( my ( $timestamp, $chnl, $page ) = m/(.*):.*solo_video_channel_write(.*): qu
 =end text
 
 =cut
-
-##################################################################
-#
-# ### USAGE POD (start)
-#
-#                    - long getopts
-#
-##################################################################
-
-=head1 NAME
-
-sample - Using Getopt::Long and Pod::Usage
-
-=head1 SYNOPSIS
-
-sample [options] [file ...]
-
- Options:
-   -ascii           show ASCII table 
-   -blank           blank empty memory locations 
-   -code            show hex dump 
-   -debug           debug mode 
-   -help            brief help message
-   -input           input file <filename>
-   -location        show addresses 
-   -man             full documentation 
-   -output          output file <filename>
-   -quiet           not verbose 
-   -space           add spaces between hex bytes of code
-   -talkative       talkative (i.e. verbose) 
-   -upper           global uppercase 
-   -upper_select    uppercase addresses/code <addresss|code|both>
-   -verbose         verbose 
-   -version         display version
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-ascii>
-
-Show ASCII table.
-
-=item B<-blank>
-
-Blank empty memory locations.
-Supress???
-
-=item B<-code>
-
-Show hex dump.
-
-=item B<-debug>
-
-Set debug mode.
-
-=item B<-help>
-
-Print a brief help message and exits.
-
-=item B<-input>
-
-Specify input file.
-
-=item B<-location>
-
-Show addresses.
-
-=item B<-man>
-
-Prints the manual page and exits.
-
-=item B<-output>
-
-Specify output file.
-
-=item B<-quiet>
-
-Disable verbose mode.
-
-=item B<-space>
-
-Add spaces between hex bytes of code.
-Supress???
-
-=item B<-talkative>
-
-Talkative (i.e. verbose) mode.
-
-=item B<-upper>
-
-Use uppercase for all hexadecimal.
-
-=item B<-upper_select>
-
-Specify <address|code|both> to use uppercase for hexadecimal.
-
-=item B<-verbose>
-
-Set verbose mode.
-
-=item B<-version>
-
-Display version.
-
-=back
-
-=head1 DESCRIPTION
-
-B<This program> will read the given input file(s) and do something
-useful with the contents thereof.
-
-=cut
-
-##################################################################
-#
-# ### USAGE POD (end)
-#
-#                    - long getopts
-#
-##################################################################
-
-
-
-##################################################################
-#
-# ### USAGE POD (start)
-#
-# For 'abcdhlmsuvwx' - short getopts
-#
-##################################################################
-
-=head1 NAME
-
-hexextractor - Extract a hex dump from assembly listing
-
-=head1 SYNOPSIS
-
-hexextractor [abcdhi:lmo:stuvwx] [file ...]
-
- Options:
-   -a               show ASCII table
-   -b               blank empty memory locations
-   -c               show hex dump
-   -d               debug mode
-   -h               brief help message
-   -i               input file
-   -l               show addresses
-   -m               full documentation
-   -o               output file
-   -s               add spaces between hex bytes of code
-   -t               talkative (i.e. verbose)
-   -u               global uppercase
-   -v               display version
-   -w               uppercase addresses
-   -x               uppercase code
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-a>
-
-Show ASCII table.
-
-=item B<-b>
-
-Blank empty memory locations.
-Supress???
-
-=item B<-c>
-
-Show hex dump.
-
-=item B<-d>
-
-Set debug mode.
-
-=item B<-h>
-
-Print a brief help message and exits.
-
-=item B<-i>
-
-Specify input file.
-
-=item B<-l>
-
-Show addresses.
-
-=item B<-m>
-
-Prints the manual page and exits.
-
-=item B<-o>
-
-Specify output file.
-
-=item B<-s>
-
-Add spaces between hex bytes of code.
-Supress???
-
-=item B<-t>
-
-Talkative (i.e. verbose) mode.
-
-=item B<-u>
-
-Use uppercase for all hexadecimal.
-
-=item B<-v>
-
-Display version.
-
-=item B<-w>
-
-Use uppercase for hexadecimal addresses.
-
-=item B<-x>
-
-Use uppercase for hexadecimal code bytes.
-
-=back
-
-=head1 DESCRIPTION
-
-B<This program> will read the given input file(s) and do something
-useful with the contents thereof.
-
-=cut
-
-##################################################################
-#
-# ### USAGE POD (end)
-#
-# For 'abcdhlmsuvwx' - short getopts
-#
-##################################################################
 
 
