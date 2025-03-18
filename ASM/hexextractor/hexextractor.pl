@@ -153,6 +153,18 @@ Extracts a hex dump from assembler listing.
 
 Written specifically for the full assembler/assembly listing of Freeway Frog (i.e. Frogger) from the book, Spectrum Machine Language for the Absolute Beginner, by William Tang (1982).
 
+However, you could use this script on any assembly listing that *strictly* follows the two same formats as the freeway frog assembly listing.
+
+Format #1:
+
+    aaaa xxxxxxxx ddddd lllllll iiiiiii iiiiiiiiiiiiiiiiiii ;ccccccccc... 
+      4 s  8     s   5 s    7  s   7   s         1         s;
+
+Format #2:
+
+    xx[ xx[ xx[ xx[ xx[ xx[ xx[ xx]]]]]]] 
+     2 s 2 s 2 s 2 s 2 s 2 s 2 s 2
+
 =cut
 
 #=end commented_out_usage_long_getopts
@@ -294,6 +306,18 @@ Use uppercase for hexadecimal code bytes.
 Extracts a hex dump from assembler listing.
 
 Written specifically for the full assembler/assembly listing of Freeway Frog (i.e. Frogger) from the book, Spectrum Machine Language for the Absolute Beginner, by William Tang (1982).
+
+However, you could use this script on any assembly listing that *strictly* follows the two same formats as the freeway frog assembly listing.
+
+Format #1:
+
+    aaaa xxxxxxxx ddddd lllllll iiiiiii iiiiiiiiiiiiiiiiiii ;ccccccccc... 
+      4 s  8     s   5 s    7  s   7   s         1         s;
+
+Format #2:
+
+    xx[ xx[ xx[ xx[ xx[ xx[ xx[ xx]]]]]]] 
+     2 s 2 s 2 s 2 s 2 s 2 s 2 s 2
 
 =cut
 
