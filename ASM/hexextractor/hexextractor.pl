@@ -71,6 +71,16 @@ hexextractor [options] [infile ... [outfile ...] ]
    -verbose         verbose 
    -version         display version
 
+ Examples:
+   cat freeway_frog_full.asm | perl hexextractor.pl -ascii -code -location -space -blank -verbose -upper_select both
+   perl hexextractor.pl -ascii -code -location -space -blank -verbose -upper_select both freeway_frog_full.asm
+   perl hexextractor.pl -ascii -code -location -space -blank -verbose -upper_select both -output frogger.hex freeway_frog_full.asm
+   perl hexextractor.pl -ascii -code -location -space -blank -verbose -upper_select both -extra
+
+   perl hexextractor.pl -help
+   perl hexextractor.pl -version
+
+
 =head1 OPTIONS
 
 =over 8
@@ -218,14 +228,14 @@ hexextractor [abcdehi:lmo:stuvwx] [infile ... [outfile ...] ]
    -x               uppercase code
 
  Examples:
-    cat freeway_frog_full.asm | perl hexextractor.pl -abcls
-    perl hexextractor.pl -alcxwbsv -i in.asm -o out.hex
-    perl hexextractor.pl -alcxwbsv freeway_frog_full.asm freeway_frog.hex
-    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs -o frogger.hex
-    cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs fraggle.hex
+   cat freeway_frog_full.asm | perl hexextractor.pl -abcls
+   perl hexextractor.pl -alcxwbsv -i in.asm -o out.hex
+   perl hexextractor.pl -alcxwbsv freeway_frog_full.asm freeway_frog.hex
+   cat freeway_frog_full.asm | perl hexextractor.pl -alcxwbs -o frogger.hex
+   perl hexextractor.pl -alcxwbse
 
-    perl hexextractor.pl -h
-    perl hexextractor.pl -v
+   perl hexextractor.pl -h
+   perl hexextractor.pl -v
 
 
 
@@ -382,6 +392,20 @@ sub address_div_8 ($);
 sub is_mod_8 ($);
 sub help_mess ();
 sub version_mess ();
+
+#
+
+sub hander_ascii ();
+sub hander_blank ();
+sub hander_code ();
+sub handler_debug ();
+sub handler_extra ();
+sub handler_input ($$);
+sub handler_location ();
+sub handler_output ($$);
+sub handler_space ();
+sub handler_upper ();
+sub handler_upper_select ();
 
 ##################################################################
 #
@@ -601,19 +625,14 @@ my $code = '';          # option variable with default value (false)
 my $debug = '';         # option variable with default value (false)
 my $extra = '';         # option variable with default value (false)
 my $help = '';          # option variable with default value (false)
-my $input = '';         # option variable with default value
 my $location = '';      # option variable with default value (false)
 my $man = '';           # option variable with default value (false)
-my $output = '';        # option variable with default value
 my $space = '';         # option variable with default value (false)
 my $talkative = '';     # option variable with default value (false)
 my $upper = '';         # option variable with default value (false)
 my $upper_select = '';  # option variable with default value (false)
 my $verbose = '';       # option variable with default value (false)
 my $version = '';       # option variable with default value (false)
-
-#GetOptions ('help' => \$help, 'verbose+' => \$verbose, 'upper' => \$upper);
-#GetOptions ('help' => \$help, 'verbose!' => \$verbose, 'upper' => \$upper, 'input=s' => \$input, 'output=s' => \$output);
 
 GetOptions ('ascii|a'           => \&handler_ascii, 
             'blank|b'           => \&handler_blank, 
@@ -634,6 +653,7 @@ GetOptions ('ascii|a'           => \&handler_ascii,
             'version|v'         => \$version
            )  or die "Usage: $0 --from NAME\n";
 
+=begin commented_out_unified_non_handler_code
 
 if ($input or $ARGV[0]) {
   if ($input) {
@@ -676,6 +696,10 @@ if ($output or $ARGV[1]) {
   print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
 }
 
+=end commented_out_unified_non_handler_code
+
+=cut
+
 #=end commented_out_long_getopts_code
 
 #=cut
@@ -706,8 +730,12 @@ if ($opt_v) {
   exit(0);
 }
 
+=begin commented_out_shortopts_non_handler_code
+
 if ($opt_i or $ARGV[0]) {
   if ($opt_i) {
+    #&handler_input();
+
     print "i=$opt_i\n" if DEBUG or $opt_d;
     print "Filename to read: $opt_i\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $infile = $opt_i;
@@ -719,6 +747,8 @@ if ($opt_i or $ARGV[0]) {
   }
   open $fhi, '<', $infile or die $!;
 } elsif ($opt_e) {
+  #&handler_extra();
+
   print "Filename to read: Internal DATA\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
     $fhi = \*DATA;
 } else {
@@ -746,6 +776,8 @@ if ($opt_i or $ARGV[0]) {
 
 if ($opt_o or $ARGV[1]) {
   if ($opt_o) {
+    #&handler_output();
+
     print "o=$opt_o\n" if DEBUG or $opt_d;
     print "Filename to write: $opt_o\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
     $outfile = $opt_o;
@@ -777,41 +809,78 @@ if ($opt_o or $ARGV[1]) {
 #  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
 #}
 
+=end commented_out_shortopts_non_handler_code
+
+=cut
+
+=begin commented_out_shortopts_handler_code
+
+if ($opt_i) {
+  &handler_input("$opt_i",$opt_i);
+}
+
+if ($opt_o) {
+  &handler_output("$opt_i",$opt_o);
+}
+
+if ($opt_e) {
+  &handler_extra();
+}
+
+=end commented_out_shortopts_handler_code
+
+=cut
+
 =end commented_out_short_getopts_code
 
 =cut
 
 ##################################################################
 #
-# ### Pure @ARGV stuff - ignore
+# ### Pure @ARGV stuff
 #
 ##################################################################
 
-#if ($ARGV[0]) {
-#  print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
-#  $infile = $ARGV[0];
-#
-#  open $fhi, '<', $infile or die $!;
-#
+#=begin comment_out_argv
+
+# Need to check for $fhi and $fho already set
+
+if ($ARGV[0] and !$fhi) {
+  print "In ARGV[0]\n" if DEBUG or $opt_d;
+  print "Filename to read: $ARGV[0]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+  $infile = $ARGV[0];
+
+  open $fhi, '<', $infile or die $!;
+
 #} else {
-#  # Just use STDIN
-#  # From https://stackoverflow.com/a/29167251/4424636
-#  $fhi = \*STDIN;
-#  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
-#}
-#
-#if ($ARGV[1]) {
-#  print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
-#  $outfile = $ARGV[1];
-#
-#  open $fho, '>', $outfile or die $!;
-#
+} elsif (!$fhi) {
+  print "In ARGV[0] else\n" if DEBUG or $opt_d;
+  # Just use STDIN
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fhi = \*STDIN;
+  print "Writing to STDIN\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+}
+
+if ($ARGV[1] and !$fho) {
+  print "In ARGV[1] if\n" if DEBUG or $opt_d;
+  print "Filename to write: $ARGV[1]\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+  $outfile = $ARGV[1];
+
+  open $fho, '>', $outfile or die $!;
+
 #} else {
-#  # Just use STDOUT
-#  # From https://stackoverflow.com/a/29167251/4424636
-#  $fho = \*STDOUT;
-#  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
-#}
+} elsif (!$fho) {
+  print "In ARGV[1] else\n" if DEBUG or $opt_d;
+  # Just use STDOUT
+  # From https://stackoverflow.com/a/29167251/4424636
+  $fho = \*STDOUT;
+  print "Writing to STDOUT\n" if DEBUG or $opt_d or VERBOSE or $opt_t;
+}
+
+#=end comment_out_argv
+
+#=cut
+
 
 ##################################################################
 #
@@ -826,10 +895,19 @@ if ($opt_o or $ARGV[1]) {
 #
 ##################################################################
 
+  print "In main\n" if DEBUG or $opt_d;
 
-while(my $line = <$fhi>) {
+my $line;
+
+#while($line = <$fhi> and $opt_e and $line !~ /^__END__$/) {
+#while(($line = <$fhi> ) !~ /^__END__$/) {
+while( $line = <$fhi> ) {
+
+  print "In main:while()\n" if DEBUG or $opt_d;
 
   chomp $line;
+
+  last if $opt_e and $line =~ m/^__END__$/i;
 
   if ($line =~ /^\s*([0-9a-fA-F]{2}(?:\s|$))+/) {
 
@@ -1450,7 +1528,72 @@ Handler for 'extra' long opt.
 
 sub handler_extra ()
 {
-  $main::opt_e = 1;
+  if (!$main::opt_e) {
+    # This should work... as $extra has been "set" (to 1?) by getopts
+    $main::opt_e = $extra;
+    # but also equivalent to
+    #$main::opt_e = 1;
+  }
+
+  # If we do the file handle here, instead of messy if
+
+  # If the input filehandle isn't already set
+  if (!$fhi){
+    # First check to see if __DATA__ is present and full
+
+    # How to check???
+
+    print "Filename to read: Internal DATA\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    $fhi = \*DATA;
+  }
+}
+
+=item handler_input($$)
+
+Handler for 'input' long opt.
+
+=cut
+
+sub handler_input ($$)
+{
+  my ($input_name, $input) = @_;
+
+  # If we do the file handle here, instead of messy if.
+
+  # If the input filehandle isn't already set
+  if (!$main::fhi){
+
+    print "i=$input\n" if DEBUG or $opt_d;
+    print "Filename to read: $input\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    #$infile = $input;
+
+    #open $main::fhi, '<', $infile or die $!;
+    open $main::fhi, '<', $input or die $!;
+  }
+}
+
+=item handler_output($$)
+
+Handler for 'output' long opt.
+
+=cut
+
+sub handler_output ($$)
+{
+  my ($output_name, $output) = @_;
+
+  # If we do the file handle here, instead of messy if.
+
+  # If the output filehandle isn't already set
+  if (!$main::fho){
+
+    print "o=$output\n" if DEBUG or $opt_d;
+    print "Filename to write: $output\n" if DEBUG or $opt_d or VERBOSE or $verbose or $talkative;
+    #$outfile = $output;
+
+    #open $main::fho, '>', $outfile or die $!;
+    open $main::fho, '>', $output or die $!;
+  }
 }
 
 =item handler_location()
